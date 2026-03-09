@@ -38,6 +38,7 @@ from . import traffic_situations
 from . import traffic_counters
 from . import park_rail
 from . import multimodal
+from . import geo_admin
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -48,7 +49,7 @@ logger = logging.getLogger("swiss-road-mobility-mcp")
 mcp = FastMCP(
     "swiss_road_mobility_mcp",
     instructions=(
-        "Swiss road and mobility data server with 12 tools (Phase 1 + Phase 2 + Phase 3). "
+        "Swiss road and mobility data server with 15 tools (Phase 1 + Phase 2 + Phase 3 + Phase 4). "
         "Phase 1 (no API key): shared vehicles (road_find_sharing, road_search_sharing, road_sharing_providers), "
         "EV chargers (road_find_charger, road_charger_status), system check (road_check_status). "
         "Phase 2 (free API key from api-manager.opentransportdata.swiss): "
@@ -61,7 +62,12 @@ mcp = FastMCP(
         "multimodal trip planner combining car+park+rail+PT (road_multimodal_plan). "
         "Set OPENTRANSPORTDATA_API_KEY environment variable for Phase 2 tools. "
         "Data sources: sharedmobility.ch, ich-tanke-strom.ch, opentransportdata.swiss (ASTRA DATEX II), "
-        "SBB Open Data (data.sbb.ch), transport.opendata.ch."
+        "SBB Open Data (data.sbb.ch), transport.opendata.ch. "
+        "Phase 4 (no API key – fully open): "
+        "Swiss address geocoding from official federal registry (road_geocode_address), "
+        "reverse geocoding to nearest official address (road_reverse_geocode), "
+        "official road classification via swissTLM3D (road_classify_road). "
+        "Data source: geo.admin.ch / swisstopo."
     ),
 )
 
@@ -545,6 +551,16 @@ async def road_check_status() -> str:
             "description": "Verkehrszähler DATEX II (Phase 2)",
             "api_key_required": True,
         },
+        "geo_admin_search": {
+            "url": "https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=Bern&type=locations&limit=1",
+            "description": "geo.admin.ch Adresssuche – amtl. Gebäudeadressverzeichnis (Phase 4)",
+            "api_key_required": False,
+        },
+        "geo_admin_roads": {
+            "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometry=8.5,47.3&geometryType=esriGeometryPoint&imageDisplay=100,100,96&mapExtent=8.4,47.2,8.6,47.4&tolerance=20&layers=all:ch.swisstopo.swisstlm3d-strassen&sr=4326",
+            "description": "geo.admin.ch swissTLM3D Strassenklassifikation (Phase 4)",
+            "api_key_required": False,
+        },
     }
 
     results = {}
@@ -583,7 +599,7 @@ async def road_check_status() -> str:
     return json.dumps(
         {
             "server": "swiss-road-mobility-mcp",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "phase": "Phase 1 + Phase 2 + Phase 3 (Shared Mobility + E-Charging + DATEX II + Park & Rail + Multimodal)",
             "api_keys": {
                 "phase_1": "KEINE – alle APIs sind komplett offen!",
@@ -596,6 +612,11 @@ async def road_check_status() -> str:
                 "road_park_rail: Park+Rail Anlagen via SBB Open Data (kein Key)",
                 "road_mobility_snapshot: Vollständiges Mobilitäts-Lagebild für einen Standort",
                 "road_multimodal_plan: Auto → Park+Rail → ÖV → Ziel (multimodal)",
+            ],
+            "phase_4_tools": [
+                "road_geocode_address: Adresse → GPS via amtl. Gebäudeadressverzeichnis (geo.admin.ch)",
+                "road_reverse_geocode: GPS → amtliche Adresse mit EGID/EGAID (geo.admin.ch)",
+                "road_classify_road: swissTLM3D Strassenklassifikation (geo.admin.ch)",
             ],
         },
         ensure_ascii=False,
@@ -1314,6 +1335,273 @@ async def road_multimodal_plan(params: MultimodalPlanInput) -> str:
             {"error": f"Unerwarteter Fehler: {e}"},
             ensure_ascii=False,
         )
+
+
+# ===========================================================================
+# Input Models – Phase 4: geo.admin.ch
+# ===========================================================================
+
+class GeocodeAddressInput(BaseModel):
+    """Input für Adress-Geocoding via amtliches Gebäudeadressverzeichnis."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    search_text: str = Field(
+        ...,
+        description=(
+            "Schweizer Adresse als Suchtext. Unterstützte Formate:\n"
+            "  - «Bahnhofstrasse 1 Zürich»\n"
+            "  - «Bundesgasse 3 3003 Bern»\n"
+            "  - «Weinbergstrasse 5 8001»\n"
+            "Tipp: PLZ + Ort erhöht die Treffsicherheit."
+        ),
+        min_length=3,
+        max_length=200,
+    )
+    limit: int = Field(
+        default=5,
+        description="Maximale Anzahl Treffer (1–10). Default: 5",
+        ge=1,
+        le=10,
+    )
+
+
+class ReverseGeocodeInput(BaseModel):
+    """Input für Reverse Geocoding: GPS-Koordinaten → amtliche Adresse."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    latitude: float = Field(
+        ...,
+        description=(
+            "Breitengrad (WGS84). "
+            "Beispiele: 47.3769 (Zürich HB), 46.9480 (Bern), 47.0503 (Fribourg)"
+        ),
+        ge=45.5,
+        le=48.0,
+    )
+    longitude: float = Field(
+        ...,
+        description=(
+            "Längengrad (WGS84). "
+            "Beispiele: 8.5417 (Zürich HB), 7.4474 (Bern), 7.1560 (Fribourg)"
+        ),
+        ge=5.5,
+        le=10.8,
+    )
+    limit: int = Field(
+        default=3,
+        description="Maximale Anzahl nächstgelegener Adressen (1–5). Default: 3",
+        ge=1,
+        le=5,
+    )
+
+
+class ClassifyRoadInput(BaseModel):
+    """Input für Strassenklassifikation via swissTLM3D."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    latitude: float = Field(
+        ...,
+        description=(
+            "Breitengrad des Standorts. "
+            "Beispiele: 47.3769 (Zürich HB), 47.0061 (A1 bei Lausanne)"
+        ),
+        ge=45.5,
+        le=48.0,
+    )
+    longitude: float = Field(
+        ...,
+        description=(
+            "Längengrad des Standorts. "
+            "Beispiele: 8.5417 (Zürich HB), 6.6335 (A1 bei Lausanne)"
+        ),
+        ge=5.5,
+        le=10.8,
+    )
+    tolerance: int = Field(
+        default=50,
+        description=(
+            "Suchtoleranz in Pixeln (bei 1000×1000px Render ≈ 5–200m). "
+            "Kleiner Wert (20): nur direkt anliegende Strassen. "
+            "Grosser Wert (100): breiter Umkreis. Default: 50"
+        ),
+        ge=10,
+        le=200,
+    )
+    limit: int = Field(
+        default=5,
+        description="Maximale Anzahl gefundener Strassensegmente (1–10). Default: 5",
+        ge=1,
+        le=10,
+    )
+
+
+# ===========================================================================
+# Tool 13: Adress-Geocoding (Phase 4 – kein API-Key)
+# ===========================================================================
+
+@mcp.tool(
+    name="road_geocode_address",
+    annotations={
+        "title": "Geocode Swiss Address (Official Federal Registry)",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def road_geocode_address(params: GeocodeAddressInput) -> str:
+    """Convert a Swiss address to GPS coordinates using the official federal address registry.
+
+    Uses swisstopo's amtliches Gebäudeadressverzeichnis (GWR-based) –
+    the authoritative Swiss federal building address register containing
+    every officially registered address in Switzerland.
+
+    Unlike general geocoders, this returns only verified, legally registered
+    addresses. Every result has an EGAID (Eidgenössischer Adressidentifikator)
+    and EGID (Gebäudeidentifikator) from the federal GWR register.
+
+    Think of it as the «official digital postman»: if the address exists in
+    Switzerland, it's here. If it's not here, it may not be officially registered.
+
+    Phase 4 tool – no API key required!
+    Data source: geo.admin.ch / swisstopo amtliches Gebäudeadressverzeichnis.
+
+    Returns:
+        JSON with matching addresses, each containing:
+        - address: Full address string (e.g. «Bahnhofstrasse 1 8001 Zürich»)
+        - latitude / longitude: WGS84 coordinates
+        - feature_id: ID in the federal address register
+        - source: Layer ID (ch.swisstopo.amtliches-gebaeudeadressverzeichnis)
+    """
+    try:
+        result = await geo_admin.geocode_address(
+            search_text=params.search_text,
+            limit=params.limit,
+        )
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps(
+            {"error": f"geo.admin.ch Geocoding-Fehler: {e}"},
+            ensure_ascii=False,
+        )
+
+
+# ===========================================================================
+# Tool 14: Reverse Geocoding (Phase 4 – kein API-Key)
+# ===========================================================================
+
+@mcp.tool(
+    name="road_reverse_geocode",
+    annotations={
+        "title": "Reverse Geocode Coordinates to Official Swiss Address",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def road_reverse_geocode(params: ReverseGeocodeInput) -> str:
+    """Find the nearest official Swiss addresses for given GPS coordinates.
+
+    Uses the federal building address register (amtliches Gebäudeadressverzeichnis)
+    to identify the nearest registered building addresses to any point in Switzerland.
+
+    Returns official GWR (Gebäude- und Wohnungsregister) data including:
+    - EGID (Eidgenössischer Gebäudeidentifikator) – unique federal building ID
+    - EGAID (Eidgenössischer Adressidentifikator) – unique federal address ID
+    - Building category (residential / non-residential)
+    - Official address status
+
+    Especially useful for enriching mobility data: finding the exact legal
+    address of a charging station, Park & Rail facility, or sharing station.
+
+    Phase 4 tool – no API key required!
+    Data source: geo.admin.ch / swisstopo amtliches Gebäudeadressverzeichnis (GWR).
+
+    Returns:
+        JSON with nearest official addresses including EGID/EGAID identifiers,
+        municipality data, and building category.
+    """
+    try:
+        result = await geo_admin.reverse_geocode(
+            latitude=params.latitude,
+            longitude=params.longitude,
+            limit=params.limit,
+        )
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps(
+            {"error": f"geo.admin.ch Reverse-Geocoding-Fehler: {e}"},
+            ensure_ascii=False,
+        )
+
+
+# ===========================================================================
+# Tool 15: Strassenklassifikation (Phase 4 – kein API-Key)
+# ===========================================================================
+
+@mcp.tool(
+    name="road_classify_road",
+    annotations={
+        "title": "Classify Swiss Roads via swissTLM3D (Official Road Network)",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def road_classify_road(params: ClassifyRoadInput) -> str:
+    """Classify roads at a location using the official Swiss topographic road network (swissTLM3D).
+
+    The swissTLM3D is the authoritative federal road network dataset from swisstopo.
+    It classifies every road in Switzerland by:
+
+    Road type (Objektart):
+      🛣️ Autobahn · 🚗 Hauptstrasse · 🏘️ Nebenstrasse · 🚶 Weg/Pfad …
+
+    Functional class (Verkehrsbedeutung):
+      Hauptverbindungsstrasse · Verbindungsstrasse · Sammelstrasse · Zufahrtstrasse
+
+    Surface (Belagsart): Hartbelag (Asphalt/Beton) · Weich-/Naturbelag
+
+    Ownership (Eigentümer): Bund · Kanton · Gemeinde · Privat
+
+    Access restriction (Verkehrsbeschränkung):
+      Keine Beschränkung · Einsatzkräfte · Landwirtschaft ·
+      Fussgänger und Radfahrer · Kein öffentlicher Verkehr …
+
+    Use cases:
+      - «Is this a motorway or a local road?»
+      - «Who maintains this road – canton or municipality?»
+      - Enriching traffic counter data with official road classification
+
+    Phase 4 tool – no API key required!
+    Data source: geo.admin.ch / swisstopo swissTLM3D Strassen.
+
+    Returns:
+        JSON with road segments at the location, each containing:
+        - road_name: Official road name (if assigned)
+        - road_type: {code, label_de, label_en, emoji, network_importance}
+        - surface, functional_class, ownership, access_restriction
+        Plus a type_summary overview.
+    """
+    try:
+        result = await geo_admin.classify_road(
+            latitude=params.latitude,
+            longitude=params.longitude,
+            tolerance=params.tolerance,
+            limit=params.limit,
+        )
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps(
+            {"error": f"geo.admin.ch Strassenklassifikation-Fehler: {e}"},
+            ensure_ascii=False,
+        )
+
 
 
 # ===========================================================================
