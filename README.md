@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io)
-[![Version](https://img.shields.io/badge/version-0.3.1-orange.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.4.0-orange.svg)](pyproject.toml)
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 🇩🇪 Swiss Road & Mobility MCP Server {#de}
 
-### 🧰 12 Tools
+### 🧰 15 Tools
 
 #### Shared Mobility & E-Laden (kein API-Key)
 
@@ -47,6 +47,14 @@
 | `road_park_rail` | SBB Park+Rail Anlagen in der Nähe finden | 5min |
 | `road_mobility_snapshot` | Vollständiges Mobilitäts-Lagebild für einen Standort | – |
 | `road_multimodal_plan` | Auto → Park+Rail → ÖV → Ziel planen | – |
+
+#### Geografie & Adressen – Phase 4 (kein API-Key)
+
+| Tool | Beschreibung | Cache |
+|------|-------------|-------|
+| `road_geocode_address` | Schweizer Adresse → GPS (amtl. Gebäudeadressverzeichnis) | – |
+| `road_reverse_geocode` | GPS → amtliche Adresse mit EGID/EGAID (GWR) | – |
+| `road_classify_road` | Strassenklassifikation via swissTLM3D | – |
 
 ---
 
