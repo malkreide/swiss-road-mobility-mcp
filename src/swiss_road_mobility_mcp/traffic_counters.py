@@ -16,10 +16,10 @@ Zwei SOAP-Operationen:
   2. pullMeasuredData          → Echtzeit-Messungen (Fahrzeuge/h, km/h)
 """
 
+import logging
 import time
 import xml.etree.ElementTree as ET
-import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 
@@ -95,7 +95,7 @@ def _make_data_body(site_ids: list[str]) -> str:
     )
 
     # Aktueller Zeitstempel für publicationTime
-    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S")
 
     return f"""\
 <?xml version="1.0" encoding="utf-8"?>

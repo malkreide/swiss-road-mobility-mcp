@@ -11,13 +11,13 @@ Beide APIs (sharedmobility.ch und ich-tanke-strom.ch) sind:
 ✅ Rate Limits trotzdem respektieren – wir sind gute Gäste.
 """
 
-import time
 import hashlib
 import json
-import math
 import logging
+import math
+import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -94,7 +94,7 @@ class SimpleCache:
         raw = f"{prefix}:{json.dumps(params, sort_keys=True)}"
         return hashlib.md5(raw.encode()).hexdigest()
 
-    def get(self, prefix: str, params: dict) -> Optional[Any]:
+    def get(self, prefix: str, params: dict) -> Any | None:
         key = self._make_key(prefix, params)
         entry = self._store.get(key)
         if entry is None:

@@ -23,7 +23,6 @@ transport.opendata.ch API:
 
 import asyncio
 import logging
-import time
 
 import httpx
 
@@ -252,7 +251,7 @@ async def build_mobility_snapshot(
     Returns:
         dict mit snapshot_at, location, und allen Mobilitätsdaten
     """
-    from . import shared_mobility, ev_charging, park_rail
+    from . import ev_charging, park_rail, shared_mobility
     from .api_infrastructure import MobilityHTTPClient, RateLimiter
 
     client = MobilityHTTPClient()
@@ -380,7 +379,7 @@ async def plan_multimodal_trip(
     Returns:
         dict mit vollständigem multimodalem Reiseplan
     """
-    from . import shared_mobility, park_rail
+    from . import park_rail, shared_mobility
     from .api_infrastructure import MobilityHTTPClient, RateLimiter
 
     client = MobilityHTTPClient()

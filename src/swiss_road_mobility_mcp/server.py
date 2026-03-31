@@ -26,19 +26,12 @@ Phase 3 (3 Tools, kein API-Key nötig):
 import json
 import logging
 import os
-import sys
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
-from .api_infrastructure import MobilityHTTPClient, RateLimiter, APIError
-from . import shared_mobility
-from . import ev_charging
-from . import traffic_situations
-from . import traffic_counters
-from . import park_rail
-from . import multimodal
-from . import geo_admin
+from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
+from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 

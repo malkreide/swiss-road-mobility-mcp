@@ -19,9 +19,8 @@ haben wir ein Telefonbuch im Schrank.
 """
 
 import logging
-from typing import Any
 
-from .api_infrastructure import MobilityHTTPClient, APIError, haversine_km
+from .api_infrastructure import APIError, MobilityHTTPClient, haversine_km
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 

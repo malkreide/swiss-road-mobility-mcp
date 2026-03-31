@@ -12,9 +12,9 @@ Update: Echtzeit (VMZ-CH, Kantonspolizeien, ASTRA-Einheiten)
 Kosten: Gratis nach Registrierung (Open Government Data)
 """
 
+import logging
 import time
 import xml.etree.ElementTree as ET
-import logging
 
 import httpx
 

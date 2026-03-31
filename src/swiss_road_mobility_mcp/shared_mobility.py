@@ -17,7 +17,7 @@ Drei Hauptabfragen:
 import logging
 from typing import Any
 
-from .api_infrastructure import MobilityHTTPClient, APIError
+from .api_infrastructure import APIError, MobilityHTTPClient
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 

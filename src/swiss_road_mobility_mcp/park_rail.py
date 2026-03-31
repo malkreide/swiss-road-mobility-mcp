@@ -44,6 +44,14 @@ PARK_RAIL_URL = (
     "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/station-mobility/records"
 )
 
+# Bug #1 Fix (v0.3.1): SBB hat den Datensatz mehrfach umbenannt.
+# Fallback-Kette: wir probieren alle bekannten Kandidaten durch.
+_PARK_RAIL_CANDIDATES = [
+    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/station-mobility/records",
+    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/park-and-rail/records",
+    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/mobilitat/records",
+]
+
 _CACHE_TTL = 300.0  # 5 Minuten (Kapazitätsdaten ändern sich selten)
 _cache: dict = {}
 _cache_ts: float = 0.0
@@ -178,6 +186,8 @@ def _format_facility(record: dict, lat_center: float, lon_center: float) -> dict
             if float(total) > 0
             else None
         )
+
+    for optional_key, field_name in [
         ("bike_parking", "veloabstellplaetze"),
     ]:
         val = fields.get(field_name)
