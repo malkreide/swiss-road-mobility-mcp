@@ -1,33 +1,32 @@
 [build-system]
-requires = ["hatchling"]
+requires      = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "swiss-road-mobility-mcp"
-version = "0.4.0"
-description = "MCP Server for Swiss road mobility – shared vehicles (GBFS), EV charging, DATEX II traffic, Park & Rail, multimodal trip planning"
-readme = "README.md"
-license = {text = "MIT"}
+name        = "swiss-road-mobility-mcp"
+version     = "0.4.0"
+description = "MCP Server for Swiss road mobility — shared vehicles, EV charging, traffic alerts, Park & Rail, multimodal trip planning"
+readme      = "README.md"
+license     = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [
-    {name = "Schulamt Stadt Zürich"},
-]
+
 keywords = [
-    "mcp", "model-context-protocol", "shared-mobility", "gbfs",
-    "ev-charging", "switzerland", "open-data", "mobility",
-    "e-scooter", "e-bike", "car-sharing", "ich-tanke-strom",
-    "datex2", "traffic", "verkehrsmeldungen", "astra", "opentransportdata",
-    "park-rail", "park-and-ride", "sbb", "multimodal", "intermodal",
-    "transport", "fahrplan",
+    "mcp", "model-context-protocol", "swiss-open-data",
+    "shared-mobility", "gbfs", "ev-charging", "mobility",
+    "datex2", "traffic", "park-rail", "multimodal",
+    "sbb", "transport", "geocoding",
 ]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: GIS",
 ]
+
 dependencies = [
     "mcp[cli]>=1.0.0",
     "httpx>=0.27.0",
@@ -36,20 +35,31 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.4.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
 ]
 
 [project.scripts]
 swiss-road-mobility-mcp = "swiss_road_mobility_mcp.server:main"
 
+[project.urls]
+Homepage   = "https://github.com/malkreide/swiss-road-mobility-mcp"
+Repository = "https://github.com/malkreide/swiss-road-mobility-mcp"
+Issues     = "https://github.com/malkreide/swiss-road-mobility-mcp/issues"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/swiss_road_mobility_mcp"]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths    = ["tests"]
+addopts      = "-v --tb=short"
+
 [tool.ruff]
+line-length    = 120
 target-version = "py311"
-line-length = 120
 
 [tool.ruff.lint]
-ignore = ["E701", "E702"]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501", "E701", "E702"]
