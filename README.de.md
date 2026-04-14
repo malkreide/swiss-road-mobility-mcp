@@ -14,6 +14,12 @@
 
 ---
 
+## Demo
+
+![Demo: Claude nutzt road_mobility_snapshot am Zürich HB](docs/assets/demo.svg)
+
+---
+
 ## Übersicht
 
 `swiss-road-mobility-mcp` ermöglicht KI-Assistenten den direkten Zugang zu Schweizer Strassen- und Mobilitätsdaten:
@@ -288,13 +294,14 @@ python tests/test_phase3.py
 
 ---
 
-## Sicherheit & Datenschutz
+## Sicherheit & Grenzen
 
-- Alle Daten sind öffentliche Open-Government-Data
-- Keine persönlichen Daten werden verarbeitet
-- Rate Limiting schützt die APIs vor Überlastung
-- Lokale Caches minimieren externe Anfragen
-- DATEX-II-Daten enthalten keine Personendaten
+- **Nur lesend:** Alle Tools führen ausschliesslich HTTP-GET-Anfragen durch — es werden keine Daten geschrieben, verändert oder gelöscht.
+- **Keine Personendaten:** Standortkoordinaten, die als Tool-Inputs übergeben werden, werden nicht gespeichert, protokolliert oder über die unmittelbare API-Anfrage hinaus weitergeleitet. API-Antworten enthalten keine personenbezogenen Daten — nur Fahrzeugzählungen, Ladestation-Verfügbarkeit, Verkehrsmeldungen und geografische Metadaten.
+- **Rate Limiting:** Der Server erzwingt clientseitige Rate Limits (Shared Mobility: 30 Anfragen/60s; E-Laden: 10 Anfragen/60s) zum Schutz der vorgelagerten APIs. Der DATEX-II-Key unterliegt den Fair-Use-Bedingungen von opentransportdata.swiss.
+- **Caching:** Antworten werden In-Process gecacht (Sharing: 60s · E-Laden: 5 Min. · Park & Rail: 5 Min. · Verkehr: 1–2 Min.). Echtzeit-Daten spiegeln das Cache-Alter wider, nicht zwingend die aktuelle Sekunde.
+- **Nutzungsbedingungen:** Die Daten unterliegen den Nutzungsbedingungen der jeweiligen Quellen — [sharedmobility.ch](https://sharedmobility.ch), [ich-tanke-strom.ch](https://ich-tanke-strom.ch), [opentransportdata.swiss](https://opentransportdata.swiss), [data.sbb.ch](https://data.sbb.ch) (CC BY), [geo.admin.ch](https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html) (BGDI).
+- **Keine Gewähr:** Dieser Server ist ein unabhängiges Community-Projekt, nicht verbunden mit SBB, ASTRA, sharedmobility.ch oder einem API-Anbieter. Die Verfügbarkeit hängt von den vorgelagerten Diensten ab.
 
 ---
 
