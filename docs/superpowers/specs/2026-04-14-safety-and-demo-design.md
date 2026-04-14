@@ -10,7 +10,7 @@
 
 The `swiss-road-mobility-mcp` repository provides 15 MCP tools across 6 Swiss road and mobility data sources. Two additions are needed to increase institutional acceptance and conversion on MCP directory pages:
 
-1. A **Safety & Limits** section in both README files
+1. A **Safety & Limits** section in both README files (replaces the existing thin `## Security & Privacy` section)
 2. A **Demo SVG** showing a real Claude interaction with `road_mobility_snapshot`
 
 Reference repo: `malkreide/zurich-opendata-mcp` (lines 253–261 and `docs/assets/demo.svg`)
@@ -19,9 +19,14 @@ Reference repo: `malkreide/zurich-opendata-mcp` (lines 253–261 and `docs/asset
 
 ## 2. Safety & Limits Section
 
+### Existing section to replace
+
+Both READMEs currently contain a thin `## Security & Privacy` / `## Sicherheit & Datenschutz` section (line 291) with 5 short bullets. This section is **replaced in full** by the new richer `## Safety & Limits` / `## Sicherheit & Grenzen` section. The old content is a strict subset of the new content.
+
 ### Placement
-- `README.md`: directly before the `## License` section
-- `README.de.md`: same position, German translation
+
+- `README.md`: replace the `## Security & Privacy` block (lines 291–298) with the new section
+- `README.de.md`: replace the `## Sicherheit & Datenschutz` block (lines 291–298) with the new section
 
 ### Content (English)
 
@@ -54,49 +59,103 @@ Reference repo: `malkreide/zurich-opendata-mcp` (lines 253–261 and `docs/asset
 ## 3. Demo SVG
 
 ### File location
-`docs/assets/demo.svg`
+`docs/assets/demo.svg` (directory does not yet exist — create it)
 
-### README integration
-Both `README.md` and `README.de.md`: insert a `## Demo` section directly after the introductory quote/tagline block and before the `## Overview` table.
+### README integration — exact insertion point
 
+In both `README.md` and `README.de.md`, insert a `## Demo` section between the `---` divider on **line 15** and the `## Overview` heading on **line 17**. The surrounding context to match:
+
+```
+---
+                          ← insert here
+## Overview
+```
+
+**English (README.md):**
 ```markdown
 ## Demo
 
 ![Demo: Claude using road_mobility_snapshot at Zürich HB](docs/assets/demo.svg)
+
+---
+```
+
+**German (README.de.md):**
+```markdown
+## Demo
+
+![Demo: Claude nutzt road_mobility_snapshot am Zürich HB](docs/assets/demo.svg)
+
+---
 ```
 
 ### SVG Specification
 
 **Dimensions:** 860 × 520 px
-**Font:** monospace (system-ui fallback)
+**Font:** `'SF Mono', 'Fira Code', 'Consolas', monospace`
+**Font size:** 14px
+**Line height:** 24px
 **Theme:** GitHub Dark
+
+#### Color palette
 
 | Element | Color |
 |---------|-------|
-| Background | `#0d1117` |
-| Titlebar | `#161b22` |
-| User message bg | `#161b22` |
+| Page background | `#0d1117` |
+| Titlebar background | `#161b22` |
+| Titlebar border | `#30363d` |
+| Traffic light — red | `#ff5f57` |
+| Traffic light — yellow | `#ffbd2e` |
+| Traffic light — green | `#28c940` |
+| User message background | `#161b22` |
 | User/content text | `#e6edf3` |
-| Tool name | `#79c0ff` (cyan) |
-| Tool params | `#8b949e` (grey) |
-| Response header | `#3fb950` (green) |
-| Dividers / borders | `#30363d` |
+| Tool name (cyan) | `#79c0ff` |
+| Tool params (grey) | `#8b949e` |
+| Tool call box background | `#1c2128` |
+| Tool call box border | `#30363d` |
+| Response header (green) | `#3fb950` |
+| Dividers | `#30363d` |
 
-**Content blocks (top to bottom):**
+#### Vertical layout (y-coordinates)
 
-1. **Titlebar** — macOS-style traffic lights (●●●) + label `"Claude — swiss-road-mobility-mcp"`
-2. **User message** — `"Zeig mir alles Mobilitätsrelevante am Zürich Hauptbahnhof."`
-3. **Tool call box** — tool name `road_mobility_snapshot` in cyan, params in grey:
-   `latitude: 47.3782 · longitude: 8.5403 · radius_km: 0.5`
-4. **Response header** — `"✓ Mobilitäts-Lagebild · Zürich HB"` in green
-5. **Response content** — 4 lines with emoji icons:
-   - `🚲 Sharing     PubliBike (3 Velos) · Mobility (1 Auto) · Tier (2 E-Trottis)`
-   - `⚡ E-Laden     2 Stationen · 4 Stecker frei`
-   - `🅿️ Park+Rail   Zürich HB Sihlquai · 312 Plätze`
-   - `🚉 Bahnhof     Zürich HB (0.05 km)`
+| Block | y-start | height | Notes |
+|-------|---------|--------|-------|
+| Titlebar | 0 | 40 | Full width, border-bottom 1px `#30363d` |
+| User message block | 40 | 76 | Background `#161b22`, padding 16px, text at y=72 |
+| Gap | 116 | 12 | |
+| Tool call box | 128 | 88 | Background `#1c2128`, border 1px `#30363d`, rounded corners r=6 |
+| Gap | 216 | 16 | |
+| Response header line | 232 | 40 | Color `#3fb950` |
+| Response line 1 | 288 | 40 | 🚲 Sharing |
+| Response line 2 | 328 | 40 | ⚡ E-Laden |
+| Response line 3 | 368 | 40 | 🅿️ Park+Rail |
+| Response line 4 | 408 | 40 | 🚉 Bahnhof |
+| Bottom padding | 448 | 72 | |
 
-### Directory creation
-`docs/assets/` directory must be created (currently does not exist).
+#### Content per block
+
+**Titlebar** (y=20, vertically centered):
+- Three circles at x=16,32,48, r=6: colors `#ff5f57`, `#ffbd2e`, `#28c940`
+- Label at x=430, text-anchor=middle: `"Claude — swiss-road-mobility-mcp"` in `#8b949e`
+
+**User message** (x=16, y=72):
+- Icon: `👤` + text: `"Zeig mir alles Mobilitätsrelevante am Zürich Hauptbahnhof."` in `#e6edf3`
+
+**Tool call box** (x=16, y=144 for tool name; y=168 for params):
+- `"🔧 "` + `"road_mobility_snapshot"` in `#79c0ff`
+- `"   latitude: 47.3782 · longitude: 8.5403 · radius_km: 0.5"` in `#8b949e`
+- Left margin: x=32 inside box
+
+**Response header** (x=16, y=256):
+- `"✓  Mobilitäts-Lagebild · Zürich HB"` in `#3fb950`
+
+**Response lines** (x=16, left-pad label to x=120 for value column):
+- y=304: `"🚲 Sharing"` `"PubliBike (3 Velos) · Mobility (1 Auto) · Tier (2 E-Trottis)"`
+- y=344: `"⚡ E-Laden"` `"2 Stationen · 4 Stecker frei"`
+- y=384: `"🅿️ Park+Rail"` `"Zürich HB Sihlquai · 312 Plätze"`
+- y=424: `"🚉 Bahnhof"` `"Zürich HB (0.05 km)"`
+
+Labels in `#8b949e`, values in `#e6edf3`.
 
 ---
 
@@ -104,9 +163,9 @@ Both `README.md` and `README.de.md`: insert a `## Demo` section directly after t
 
 | File | Change |
 |------|--------|
-| `README.md` | Add `## Demo` section after intro; add `## Safety & Limits` before License |
+| `README.md` | (a) Insert `## Demo` section between line 15 `---` and line 17 `## Overview`; (b) Replace `## Security & Privacy` (lines 291–298) with `## Safety & Limits` |
 | `README.de.md` | Same structure, German content |
-| `docs/assets/demo.svg` | New file — dark terminal-style SVG |
+| `docs/assets/demo.svg` | New file — dark terminal-style SVG, 860×520px |
 
 ---
 
