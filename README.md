@@ -14,6 +14,12 @@
 
 ---
 
+## Demo
+
+![Demo: Claude using road_mobility_snapshot at Zürich HB](docs/assets/demo.svg)
+
+---
+
 ## Overview
 
 `swiss-road-mobility-mcp` provides AI-native access to Swiss road and mobility data sources:
@@ -288,13 +294,14 @@ python tests/test_phase3.py
 
 ---
 
-## Security & Privacy
+## Safety & Limits
 
-- All data is public Open Government Data
-- No personal data is processed
-- Rate limiting protects APIs from overload
-- Local caches minimise external requests
-- DATEX II data contains no personal data
+- **Read-only:** All tools perform HTTP GET requests only — no data is written, modified, or deleted on any upstream system.
+- **No personal data:** Location coordinates passed as tool inputs are not stored, logged, or forwarded beyond the immediate API request. API responses contain no PII — only vehicle counts, charger availability, traffic events, and geographic metadata.
+- **Rate limiting:** The server enforces client-side rate limits (Shared Mobility: 30 req/60s; EV Charging: 10 req/60s) to protect upstream APIs. The DATEX II key is subject to opentransportdata.swiss fair-use terms.
+- **Caching:** Responses are cached in-process (Sharing: 60s · EV: 5 min · Park+Rail: 5 min · Traffic: 1–2 min). Real-time data reflects the cache age, not necessarily the current second.
+- **Terms of service:** Data is subject to the ToS of each upstream source — [sharedmobility.ch](https://sharedmobility.ch), [ich-tanke-strom.ch](https://ich-tanke-strom.ch), [opentransportdata.swiss](https://opentransportdata.swiss), [data.sbb.ch](https://data.sbb.ch) (CC BY), [geo.admin.ch](https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/terms-of-use.html) (BGDI).
+- **No guarantees:** This server is an independent community project, not affiliated with SBB, ASTRA, sharedmobility.ch, or any API provider. Availability depends on upstream services.
 
 ---
 
