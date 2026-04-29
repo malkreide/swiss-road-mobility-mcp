@@ -96,6 +96,8 @@ Try it immediately in Claude Desktop:
 > *"Find shared bikes near Bern Bahnhof."*
 > *"Where can I charge my EV near Lucerne?"*
 
+→ [More use cases by audience](EXAMPLES.md) →
+
 ---
 
 ## Configuration

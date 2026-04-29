@@ -96,6 +96,8 @@ Sofort in Claude Desktop ausprobieren:
 > *«Finde Sharing-Velos in der Nähe vom Bern Bahnhof.»*
 > *«Wo kann ich mein E-Auto in der Nähe von Luzern laden?»*
 
+→ [Weitere Anwendungsbeispiele nach Zielgruppe](EXAMPLES.md) →
+
 ---
 
 ## Konfiguration
