@@ -152,6 +152,21 @@ For use via **claude.ai in the browser** (e.g. on managed workstations without l
 3. Set start command: `MCP_TRANSPORT=sse MCP_PORT=8001 swiss-road-mobility-mcp`
 4. In claude.ai under Settings -> MCP Servers, add: `https://your-app.onrender.com/sse`
 
+#### SSE security (SEC-009)
+
+A public SSE endpoint is reachable by anyone. To protect it (and your upstream
+API quota), configure these environment variables on the host:
+
+| Variable | Effect |
+|---|---|
+| `MCP_AUTH_TOKEN` | When set, every SSE request must send `Authorization: Bearer <token>`. **Unset = unauthenticated** (the server logs a loud warning at startup). Strongly recommended for any public deployment. |
+| `MCP_RATE_LIMIT` | Max requests per client IP per window (default `60`, `0` disables). |
+| `MCP_RATE_WINDOW` | Window length in seconds (default `60`). |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins for browser clients (default `*`). |
+
+The local **stdio** transport needs none of this — it runs in the user's
+trusted context.
+
 ---
 
 ## Available Tools

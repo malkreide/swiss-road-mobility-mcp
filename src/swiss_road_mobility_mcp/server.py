@@ -32,6 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
 from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
+from .security import BearerAuthMiddleware, RateLimitMiddleware, middleware_config
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -1647,27 +1648,48 @@ def main():
 
 
 def _run_sse(host: str, port: int) -> None:
-    """Start the SSE transport with CORS support (SDK-004).
+    """Start the SSE transport with CORS, auth and rate limiting.
 
-    Browser-based MCP clients on a different origin must be able to read the
-    `Mcp-Session-Id` response header, which requires an explicit
-    `Access-Control-Expose-Headers`. We wrap FastMCP's own SSE Starlette app
-    with CORSMiddleware and serve it via uvicorn — the same path FastMCP.run
-    uses internally, plus the middleware.
+    On top of FastMCP's own SSE Starlette app we layer three pure-ASGI
+    middlewares (request flow outermost -> innermost):
 
-    Origins are configurable via ALLOWED_ORIGINS (comma-separated). Default is
-    a wildcard, which is safe here because the server sets no auth cookies /
-    credentials. Tighten ALLOWED_ORIGINS once auth is added (see SEC-009).
+      CORS (SDK-004) -> RateLimit (SEC-009) -> BearerAuth (SEC-009) -> app
 
-    Falls back to the plain FastMCP SSE runner if the app/middleware wiring is
-    unavailable (e.g. a future SDK API change), so SSE never silently breaks.
+    - CORS exposes `Mcp-Session-Id` so browser clients on another origin can
+      read it (SDK-004). Origins via ALLOWED_ORIGINS (default wildcard, safe
+      while no credentials are used).
+    - RateLimit caps requests per client IP (MCP_RATE_LIMIT / MCP_RATE_WINDOW)
+      to dampen abuse / upstream-quota exhaustion even in unauthenticated mode.
+    - BearerAuth requires `Authorization: Bearer <MCP_AUTH_TOKEN>` when that
+      env var is set; otherwise it is a pass-through and we warn loudly.
+
+    Served via uvicorn — the same path FastMCP.run uses internally. Falls back
+    to the plain FastMCP SSE runner if the app/middleware wiring is unavailable
+    (e.g. a future SDK API change), so SSE never silently breaks.
     """
     allowed = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    cfg = middleware_config()
+    if not cfg.auth_token:
+        logger.warning(
+            "MCP_AUTH_TOKEN is not set — the SSE endpoint is UNAUTHENTICATED and "
+            "reachable by anyone who can connect. Set MCP_AUTH_TOKEN to require a "
+            "Bearer token (SEC-009). Rate limiting (%s req / %ss per IP) stays active.",
+            cfg.rate_limit_max,
+            int(cfg.rate_limit_window),
+        )
     try:
         import uvicorn
         from starlette.middleware.cors import CORSMiddleware
 
         app = mcp.sse_app()
+        # add_middleware prepends, so the LAST added is outermost. Desired
+        # request flow: CORS -> RateLimit -> BearerAuth -> app.
+        app.add_middleware(BearerAuthMiddleware, token=cfg.auth_token)
+        app.add_middleware(
+            RateLimitMiddleware,
+            max_requests=cfg.rate_limit_max,
+            window_seconds=cfg.rate_limit_window,
+        )
         app.add_middleware(
             CORSMiddleware,
             allow_origins=allowed or ["*"],
@@ -1677,7 +1699,7 @@ def _run_sse(host: str, port: int) -> None:
         )
         uvicorn.run(app, host=host, port=port)
     except Exception:
-        logger.exception("CORS-wrapped SSE app unavailable; falling back to plain SSE")
+        logger.exception("Hardened SSE app unavailable; falling back to plain SSE")
         mcp.run(transport="sse", host=host, port=port)
 
 
