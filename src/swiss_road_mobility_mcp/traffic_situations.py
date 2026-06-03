@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 import httpx
 
 from .api_infrastructure import APIError
+from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -284,7 +285,7 @@ async def fetch_situations(
         "Accept-Encoding": "gzip, deflate",
     }
 
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+    async with async_client(timeout=30.0, follow_redirects=True) as client:
         try:
             response = await client.post(
                 SITUATIONS_URL,

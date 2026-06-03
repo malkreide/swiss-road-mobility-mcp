@@ -11,7 +11,6 @@ sondern ob das Auto wirklich fährt.
 Ausführen: pytest tests/test_integration.py -v
 """
 
-import json
 import pytest
 import pytest_asyncio
 
@@ -20,14 +19,14 @@ from swiss_road_mobility_mcp.api_infrastructure import (
     RateLimiter,
     haversine_km,
 )
-from swiss_road_mobility_mcp.shared_mobility import (
-    find_nearby_vehicles,
-    search_stations,
-    list_providers,
-)
 from swiss_road_mobility_mcp.ev_charging import (
     find_nearby_chargers,
     get_charger_status,
+)
+from swiss_road_mobility_mcp.shared_mobility import (
+    find_nearby_vehicles,
+    list_providers,
+    search_stations,
 )
 
 # OPS-001: this module hits real APIs — run nightly / manually, never in PR CI.

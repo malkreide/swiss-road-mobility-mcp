@@ -14,10 +14,10 @@ Coverage per layer:
   - geo_admin: address geocoding happy-path + empty result.
 """
 
-import httpx
 import pytest
 import respx
 
+from swiss_road_mobility_mcp import ev_charging, geo_admin, shared_mobility
 from swiss_road_mobility_mcp.api_infrastructure import (
     APIError,
     MobilityHTTPClient,
@@ -25,7 +25,6 @@ from swiss_road_mobility_mcp.api_infrastructure import (
     SimpleCache,
     haversine_km,
 )
-from swiss_road_mobility_mcp import ev_charging, geo_admin, shared_mobility
 from swiss_road_mobility_mcp.shared_mobility import BASE_URL
 
 
@@ -75,15 +74,15 @@ class TestInfraPureLogic:
 class TestInfraHTTP:
     @respx.mock
     async def test_get_json_maps_500_to_apierror(self, client):
-        respx.get("https://example.test/data").respond(500, text="boom")
+        respx.get("https://data.geo.admin.ch/data").respond(500, text="boom")
         with pytest.raises(APIError):
-            await client.get_json("https://example.test/data")
+            await client.get_json("https://data.geo.admin.ch/data")
 
     @respx.mock
     async def test_get_json_caches_second_call(self, client):
-        route = respx.get("https://example.test/data").respond(200, json={"ok": True})
-        first = await client.get_json("https://example.test/data", cache_prefix="t", cache_ttl=60)
-        second = await client.get_json("https://example.test/data", cache_prefix="t", cache_ttl=60)
+        route = respx.get("https://data.geo.admin.ch/data").respond(200, json={"ok": True})
+        first = await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_ttl=60)
+        second = await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_ttl=60)
         assert first == second == {"ok": True}
         assert route.call_count == 1  # second call served from cache
 

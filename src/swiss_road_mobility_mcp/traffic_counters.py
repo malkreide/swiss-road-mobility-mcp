@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 import httpx
 
 from .api_infrastructure import APIError, haversine_km
+from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -176,7 +177,7 @@ async def _soap_post(api_key: str, soap_action: str, body: str) -> ET.Element:
         "Accept-Encoding": "gzip, deflate",
     }
 
-    async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
+    async with async_client(timeout=45.0, follow_redirects=True) as client:
         try:
             resp = await client.post(
                 COUNTERS_URL,
