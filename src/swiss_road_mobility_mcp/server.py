@@ -26,12 +26,15 @@ Phase 3 (3 Tools, kein API-Key nötig):
 import json
 import logging
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
-from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
+from .api_infrastructure import APIError, MobilityHTTPClient
+from .client_lifecycle import build_client, managed_client
 from .egress import async_client
 from .errors import unexpected_error, upstream_error
 from .logging_config import configure_logging
@@ -43,6 +46,23 @@ logger = logging.getLogger("swiss-road-mobility-mcp")
 # ---------------------------------------------------------------------------
 # Server initialization
 # ---------------------------------------------------------------------------
+
+# Shared HTTP client, owned by the lifespan (SDK-001). Created at startup,
+# closed deterministically at shutdown.
+_client: MobilityHTTPClient | None = None
+
+
+@asynccontextmanager
+async def _lifespan(server: FastMCP) -> AsyncIterator[dict]:
+    """SDK-001: manage the shared HTTP client for the server's lifetime."""
+    global _client
+    async with managed_client() as client:
+        _client = client
+        try:
+            yield {}
+        finally:
+            _client = None
+
 
 mcp = FastMCP(
     "swiss_road_mobility_mcp",
@@ -67,35 +87,25 @@ mcp = FastMCP(
         "official road classification via swissTLM3D (road_classify_road). "
         "Data source: geo.admin.ch / swisstopo."
     ),
+    lifespan=_lifespan,
 )
 
 
 # ===========================================================================
-# Shared HTTP Client (lazy initialization)
+# Shared HTTP Client accessor
 # ===========================================================================
 
-_client: MobilityHTTPClient | None = None
-
-
 def _get_client() -> MobilityHTTPClient:
-    """
-    Lazy Init des HTTP-Clients.
+    """Return the lifespan-managed shared client.
 
-    Beide APIs teilen sich denselben Client – sie brauchen
-    keine separate Authentifizierung, nur Rate Limiting.
+    Normally the FastMCP lifespan creates it at startup. The lazy fallback only
+    triggers when a tool function is called outside a running server (e.g. unit
+    tests that import and call tools directly); such a client is not lifespan-
+    closed, which is acceptable in those short-lived contexts.
     """
     global _client
     if _client is None:
-        _client = MobilityHTTPClient()
-        # Rate Limits: Höflich, nicht aggressiv
-        _client.register_limiter(
-            "sharedmobility",
-            RateLimiter(max_requests=30, window_seconds=60),
-        )
-        _client.register_limiter(
-            "ev_charging",
-            RateLimiter(max_requests=10, window_seconds=60),
-        )
+        _client = build_client()
     return _client
 
 
