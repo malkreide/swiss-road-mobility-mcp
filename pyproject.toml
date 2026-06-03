@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name        = "swiss-road-mobility-mcp"
-version     = "0.4.0"
+version     = "0.5.0"
 description = "MCP Server for Swiss road mobility — shared vehicles, EV charging, traffic alerts, Park & Rail, multimodal trip planning"
 readme      = "README.md"
 license     = { file = "LICENSE" }
