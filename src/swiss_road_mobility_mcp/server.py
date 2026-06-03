@@ -23,6 +23,7 @@ Phase 3 (3 Tools, kein API-Key nötig):
   - Multimodaler Reiseplan: Auto → Park & Rail → ÖV → Ziel
 """
 
+import json
 import logging
 import os
 from collections.abc import AsyncIterator
@@ -85,7 +86,13 @@ mcp = FastMCP(
         "Swiss address geocoding from official federal registry (road_geocode_address), "
         "reverse geocoding to nearest official address (road_reverse_geocode), "
         "official road classification via swissTLM3D (road_classify_road). "
-        "Data source: geo.admin.ch / swisstopo."
+        "Data source: geo.admin.ch / swisstopo. "
+        "<use_case>User: 'Find an e-bike near Zürich HB' -> road_find_sharing.</use_case> "
+        "<use_case>User: 'Where can I charge my EV near Bern?' -> road_find_charger.</use_case> "
+        "<use_case>User: 'I'm in Dietikon with a car and need to get to Bern' -> "
+        "road_multimodal_plan.</use_case> "
+        "<use_case>User: 'Show me everything mobility-related at this location' -> "
+        "road_mobility_snapshot.</use_case>"
     ),
     lifespan=_lifespan,
 )
@@ -141,7 +148,7 @@ def _require_api_key() -> str:
 class FindSharingInput(BaseModel):
     """Input for finding nearby shared mobility vehicles/stations."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -191,7 +198,7 @@ class FindSharingInput(BaseModel):
 class SearchSharingInput(BaseModel):
     """Input for searching shared mobility stations by name."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     search_text: str = Field(
         ...,
@@ -224,7 +231,7 @@ class SearchSharingInput(BaseModel):
 class FindChargerInput(BaseModel):
     """Input for finding nearby EV charging stations."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -275,7 +282,7 @@ class FindChargerInput(BaseModel):
 class ChargerStatusInput(BaseModel):
     """Input for checking EV charger real-time status."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     station_ids: list[str] = Field(
         default=[],
@@ -632,7 +639,7 @@ async def road_check_status(ctx: Context) -> dict[str, Any]:
 class TrafficSituationsInput(BaseModel):
     """Input für Verkehrsmeldungen (DATEX II Phase 2)."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     filter_type: str = Field(
         default="all",
@@ -670,7 +677,7 @@ class TrafficSituationsInput(BaseModel):
 class TrafficCountersInput(BaseModel):
     """Input für Echtzeit-Verkehrsaufkommen (DATEX II Phase 2)."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -707,7 +714,7 @@ class TrafficCountersInput(BaseModel):
 class CounterSitesInput(BaseModel):
     """Input für Messstellen-Suche (DATEX II Phase 2)."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -988,7 +995,7 @@ async def road_counter_sites(params: CounterSitesInput) -> dict[str, Any]:
 class ParkRailNearbyInput(BaseModel):
     """Input für Park & Rail Suche nach Position."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -1025,7 +1032,7 @@ class ParkRailNearbyInput(BaseModel):
 class ParkRailByNameInput(BaseModel):
     """Input für Park & Rail Suche nach Bahnhofsname."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     station_name: str = Field(
         ...,
@@ -1051,7 +1058,7 @@ class ParkRailByNameInput(BaseModel):
 class MobilitySnapshotInput(BaseModel):
     """Input für vollständiges Mobilitäts-Lagebild."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -1092,7 +1099,7 @@ class MobilitySnapshotInput(BaseModel):
 class MultimodalPlanInput(BaseModel):
     """Input für den multimodalen Reiseplaner."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     start_latitude: float = Field(
         ...,
@@ -1319,7 +1326,7 @@ async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> dic
 class GeocodeAddressInput(BaseModel):
     """Input für Adress-Geocoding via amtliches Gebäudeadressverzeichnis."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     search_text: str = Field(
         ...,
@@ -1344,7 +1351,7 @@ class GeocodeAddressInput(BaseModel):
 class ReverseGeocodeInput(BaseModel):
     """Input für Reverse Geocoding: GPS-Koordinaten → amtliche Adresse."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -1375,7 +1382,7 @@ class ReverseGeocodeInput(BaseModel):
 class ClassifyRoadInput(BaseModel):
     """Input für Strassenklassifikation via swissTLM3D."""
 
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid", strict=True)
 
     latitude: float = Field(
         ...,
@@ -1568,6 +1575,62 @@ async def road_classify_road(params: ClassifyRoadInput) -> dict[str, Any]:
     except Exception:
         return unexpected_error("road_classify_road")
 
+
+# ===========================================================================
+# Resources & Prompts (ARCH-008)
+# ===========================================================================
+# This server is intentionally tools-first: its value is real-time, parameterised
+# queries against live Swiss open-data APIs, not static documents. We still expose
+# one Resource (a stable catalogue of data sources — ideal read-only reference
+# context) and one Prompt (a reusable multimodal-planning template) so the read
+# and templating MCP primitives are covered. Full rationale + capability audit:
+# docs/ARCHITECTURE.md.
+
+@mcp.resource("roadmobility://data-sources")
+def data_sources_catalog() -> str:
+    """Catalogue of the upstream open-data sources this server aggregates.
+
+    Read-only, stable, non-parameterised reference data — exactly what an MCP
+    Resource is for (as opposed to the live queries handled by Tools).
+    """
+    return json.dumps(
+        {
+            "data_sources": [
+                {"name": "sharedmobility.ch", "host": "api.sharedmobility.ch",
+                 "api_key": False, "domain": "Shared mobility (bikes, e-scooters, cars)"},
+                {"name": "ich-tanke-strom.ch", "host": "data.geo.admin.ch",
+                 "api_key": False, "domain": "EV charging (locations + realtime status)"},
+                {"name": "geo.admin.ch / swisstopo", "host": "api3.geo.admin.ch",
+                 "api_key": False, "domain": "Geocoding + road classification"},
+                {"name": "SBB Open Data", "host": "data.sbb.ch",
+                 "api_key": False, "domain": "Park & Rail facilities"},
+                {"name": "transport.opendata.ch", "host": "transport.opendata.ch",
+                 "api_key": False, "domain": "Public-transport journey planning"},
+                {"name": "opentransportdata.swiss (ASTRA DATEX II)",
+                 "host": "api.opentransportdata.swiss",
+                 "api_key": True, "domain": "Traffic situations + counters"},
+            ],
+            "note": (
+                "All hosts are egress allow-listed (SEC-004/021). Phase-2 sources "
+                "require a free OPENTRANSPORTDATA_API_KEY."
+            ),
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+@mcp.prompt()
+def plan_trip(start: str, destination: str) -> str:
+    """Reusable template for a car -> Park & Rail -> train -> destination plan."""
+    return (
+        f"Plan a door-to-door trip from {start} to {destination} in Switzerland.\n"
+        "Suggested steps:\n"
+        "1. Geocode the start address with road_geocode_address.\n"
+        "2. Call road_multimodal_plan with the start coordinates and destination.\n"
+        "3. Check road_find_sharing at the start for last-mile options.\n"
+        "4. Summarise: where to park, which train to take, and total journey."
+    )
 
 
 # ===========================================================================

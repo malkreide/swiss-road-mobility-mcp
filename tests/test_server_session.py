@@ -64,3 +64,29 @@ async def test_check_status_tool_via_session_is_resilient():
     assert result.isError is False
     data = json.loads(result.content[0].text)
     assert "endpoints" in data
+
+
+async def test_data_sources_resource_and_prompt_are_exposed():
+    """ARCH-008: the server exposes a Resource and a Prompt (not tools-only)."""
+    async with connect(server.mcp._mcp_server) as client:
+        resources = await client.list_resources()
+        assert "roadmobility://data-sources" in {str(r.uri) for r in resources.resources}
+
+        read = await client.read_resource("roadmobility://data-sources")
+        catalog = json.loads(read.contents[0].text)
+        assert len(catalog["data_sources"]) == 6
+
+        prompts = await client.list_prompts()
+        assert "plan_trip" in {p.name for p in prompts.prompts}
+        rendered = await client.get_prompt("plan_trip", {"start": "Dietikon", "destination": "Bern"})
+        assert "Dietikon" in rendered.messages[0].content.text
+
+
+async def test_strict_input_rejects_wrong_type():
+    """SEC-018: strict=True rejects loosely-typed input (string for a float field)."""
+    async with connect(server.mcp._mcp_server) as client:
+        result = await client.call_tool(
+            "road_find_sharing",
+            {"params": {"latitude": "not-a-number", "longitude": 8.5417}},
+        )
+    assert result.isError is True

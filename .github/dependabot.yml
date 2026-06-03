@@ -1,0 +1,19 @@
+# ARCH-012: automated dependency updates so security patches and vetted
+# protocol/SDK bumps are surfaced as PRs (which CI then gates).
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

@@ -243,6 +243,11 @@ swiss_road_mobility_mcp/
 | transport.opendata.ch | REST/JSON | ÖV-Fahrpläne | Keine |
 | geo.admin.ch | REST/JSON | Amtliche Adressen, Strassen | Keine |
 
+**Vertiefende Doku:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (MCP-Primitive,
+Tool-Namespacing, Use-Case-Katalog, Phasen-Roadmap) ·
+[`docs/SECURITY.md`](docs/SECURITY.md) (Credential-Modell, Egress-Allow-List, Auth,
+MCP-Konformitätstabelle).
+
 ---
 
 ## Projektstruktur
