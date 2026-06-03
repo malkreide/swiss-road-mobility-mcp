@@ -1601,6 +1601,20 @@ async def road_classify_road(params: ClassifyRoadInput) -> str:
 # Entry point
 # ===========================================================================
 
+def _in_container() -> bool:
+    """Heuristik: läuft der Prozess in einem Container / Cloud-Runtime?
+
+    Nur dann ist ein 0.0.0.0-Binding legitim (Netzwerk-Isolation durch die
+    Plattform). Lokal ist es ein Sicherheitsrisiko (siehe SEC-016).
+    """
+    return (
+        os.path.exists("/.dockerenv")
+        or bool(os.environ.get("KUBERNETES_SERVICE_HOST"))
+        or bool(os.environ.get("RENDER"))
+        or bool(os.environ.get("RAILWAY_PROJECT_ID"))
+    )
+
+
 def main():
     """Start the Swiss Road & Mobility MCP Server."""
     logging.basicConfig(
@@ -1611,13 +1625,60 @@ def main():
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 
     if transport == "sse":
-        host = os.environ.get("MCP_HOST", "0.0.0.0")
+        # SEC-016: Default auf 127.0.0.1 (localhost only). Das Binden an alle
+        # Interfaces (0.0.0.0) gehört ausschliesslich in den Container-Kontext
+        # (Dockerfile / render.yaml setzen MCP_HOST=0.0.0.0 explizit). Ein
+        # 0.0.0.0-Default im Code würde einen lokal gestarteten SSE-Server für
+        # das gesamte Subnetz erreichbar machen (NeighborJack).
+        host = os.environ.get("MCP_HOST", "127.0.0.1")
         port = int(os.environ.get("MCP_PORT", "8001"))
+        if host in ("0.0.0.0", "::") and not _in_container():
+            logger.warning(
+                "Binding to %s outside a container context exposes this MCP "
+                "server to the local network (NeighborJack risk). Use "
+                "MCP_HOST=127.0.0.1 for local development.",
+                host,
+            )
         logger.info(f"Starting SSE server on {host}:{port}")
-        mcp.run(transport="sse", host=host, port=port)
+        _run_sse(host, port)
     else:
         logger.info("Starting stdio server")
         mcp.run(transport="stdio")
+
+
+def _run_sse(host: str, port: int) -> None:
+    """Start the SSE transport with CORS support (SDK-004).
+
+    Browser-based MCP clients on a different origin must be able to read the
+    `Mcp-Session-Id` response header, which requires an explicit
+    `Access-Control-Expose-Headers`. We wrap FastMCP's own SSE Starlette app
+    with CORSMiddleware and serve it via uvicorn — the same path FastMCP.run
+    uses internally, plus the middleware.
+
+    Origins are configurable via ALLOWED_ORIGINS (comma-separated). Default is
+    a wildcard, which is safe here because the server sets no auth cookies /
+    credentials. Tighten ALLOWED_ORIGINS once auth is added (see SEC-009).
+
+    Falls back to the plain FastMCP SSE runner if the app/middleware wiring is
+    unavailable (e.g. a future SDK API change), so SSE never silently breaks.
+    """
+    allowed = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    try:
+        import uvicorn
+        from starlette.middleware.cors import CORSMiddleware
+
+        app = mcp.sse_app()
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed or ["*"],
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type", "Mcp-Session-Id", "Authorization"],
+            expose_headers=["Mcp-Session-Id"],  # SDK-004: critical for browser clients
+        )
+        uvicorn.run(app, host=host, port=port)
+    except Exception:
+        logger.exception("CORS-wrapped SSE app unavailable; falling back to plain SSE")
+        mcp.run(transport="sse", host=host, port=port)
 
 
 if __name__ == "__main__":
