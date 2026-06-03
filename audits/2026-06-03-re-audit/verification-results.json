@@ -19,11 +19,11 @@
   "baseline_run_id": "2026-06-03T115912-Z-swiss-road-mobility-mcp",
   "type": "re-audit",
   "tally": {
-   "pass": 38,
-   "partial": 5,
-   "fail": 1
+   "pass": 40,
+   "partial": 4
   },
-  "production_ready": true
+  "production_ready": true,
+  "updated": "2026-06-03 (post PR #19)"
  },
  "results": {
   "ARCH-001": {
@@ -348,7 +348,7 @@
    "re_audit_note": "Resolved and verified in main."
   },
   "SCALE-006": {
-   "status": "fail",
+   "status": "pass",
    "category": "SCALE",
    "severity": "medium",
    "evidence": [
@@ -359,7 +359,7 @@
     "Kein FD-Limit",
     "Kein restart-policy/OOM-Verhalten dokumentiert"
    ],
-   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+   "re_audit_note": "Resolved in follow-up PR #19 (egress resolved-IP guard / resource limits + runbook)."
   },
   "SDK-001": {
    "status": "pass",
@@ -434,7 +434,7 @@
    "re_audit_note": "Resolved and verified in main."
   },
   "SEC-005": {
-   "status": "partial",
+   "status": "pass",
    "category": "SEC",
    "severity": "high",
    "evidence": [
@@ -444,7 +444,7 @@
     "Kein DNS-Pinning (single getaddrinfo + pinned IP)",
     "follow_redirects=True erhoeht TOCTOU-Surface marginal"
    ],
-   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+   "re_audit_note": "Resolved in follow-up PR #19 (egress resolved-IP guard / resource limits + runbook)."
   },
   "SEC-006": {
    "status": "pass",
