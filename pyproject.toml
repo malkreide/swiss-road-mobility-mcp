@@ -30,30 +30,30 @@ classifiers = [
 dependencies = [
     # ARCH-012: pin the MCP SDK to the 1.x major so the negotiated protocol
     # version stays stable; Dependabot proposes vetted bumps (.github/dependabot.yml).
-    "mcp[cli]>=1.0.0,<2.0.0",
-    "httpx>=0.27.0,<1.0.0",
-    "pydantic>=2.0.0,<3.0.0",
+    "mcp[cli]>=1.27.2,<2.0.0",
+    "httpx>=0.28.1,<1.0.0",
+    "pydantic>=2.13.4,<3.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "respx>=0.21.0",
-    "ruff>=0.4.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "respx>=0.23.1",
+    "ruff>=0.15.15",
     # OBS-006: installed in dev so the tracing tests run in CI.
-    "opentelemetry-sdk>=1.20.0",
-    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
-    "opentelemetry-instrumentation-httpx>=0.41b0",
-    "opentelemetry-instrumentation-asgi>=0.41b0",
+    "opentelemetry-sdk>=1.42.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.42.1",
+    "opentelemetry-instrumentation-httpx>=0.63b1",
+    "opentelemetry-instrumentation-asgi>=0.63b1",
 ]
 # OBS-006: optional distributed tracing. Install with:
 #   pip install 'swiss-road-mobility-mcp[tracing]'
 tracing = [
-    "opentelemetry-sdk>=1.20.0",
-    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
-    "opentelemetry-instrumentation-httpx>=0.41b0",
-    "opentelemetry-instrumentation-asgi>=0.41b0",
+    "opentelemetry-sdk>=1.42.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.42.1",
+    "opentelemetry-instrumentation-httpx>=0.63b1",
+    "opentelemetry-instrumentation-asgi>=0.63b1",
 ]
 
 [project.scripts]
