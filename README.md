@@ -272,6 +272,11 @@ swiss_road_mobility_mcp/
 | transport.opendata.ch | REST/JSON | Public transport schedules | None |
 | geo.admin.ch | REST/JSON | Official addresses, roads | None |
 
+**In-depth docs:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (MCP primitives,
+tool namespacing, use-case catalogue, phase roadmap) ·
+[`docs/SECURITY.md`](docs/SECURITY.md) (credential model, egress allow-list, auth,
+MCP conformance table).
+
 ---
 
 ## Project Structure
