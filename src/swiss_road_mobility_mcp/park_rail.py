@@ -271,11 +271,13 @@ async def find_nearby_park_rail(
                 data = response.json()
                 break  # Erfolg – Schleife verlassen
             except httpx.HTTPStatusError as e:
-                last_error = (
-                    f"SBB Open Data HTTP {e.response.status_code} "
-                    f"bei {candidate_url}: {e.response.text[:200]}"
+                # OBS-002: log the raw upstream body server-side; last_error is
+                # surfaced to the caller, so keep it status-only.
+                logger.warning(
+                    "Park+Rail: HTTP %s bei %s: %s",
+                    e.response.status_code, candidate_url, e.response.text[:200],
                 )
-                logger.warning(f"Park+Rail: {last_error}")
+                last_error = f"HTTP {e.response.status_code} bei {candidate_url}"
             except httpx.TimeoutException:
                 last_error = f"Timeout (15s) bei {candidate_url}"
                 logger.warning(f"Park+Rail: {last_error}")
@@ -361,9 +363,12 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
             response.raise_for_status()
             data = response.json()
         except httpx.HTTPStatusError as e:
+            logger.warning(
+                "SBB Open Data HTTP %s: %s",
+                e.response.status_code, e.response.text[:200],
+            )
             raise APIError(
-                f"SBB Open Data HTTP {e.response.status_code}: "
-                f"{e.response.text[:200]}"
+                f"SBB Open Data antwortete mit HTTP {e.response.status_code}."
             )
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             raise APIError(f"Verbindungsfehler zur SBB Open Data API: {e}")
