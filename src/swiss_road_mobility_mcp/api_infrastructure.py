@@ -21,6 +21,7 @@ from typing import Any
 
 import httpx
 
+from . import USER_AGENT
 from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
@@ -144,7 +145,7 @@ class MobilityHTTPClient:
             timeout=30.0,
             follow_redirects=True,
             headers={
-                "User-Agent": "swiss-road-mobility-mcp/0.1.0",
+                "User-Agent": USER_AGENT,
                 "Accept-Encoding": "gzip, deflate",
             },
         )

@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 
 import httpx
 
+from . import USER_AGENT
 from .api_infrastructure import APIError
 from .egress import async_client
 
@@ -281,7 +282,7 @@ async def fetch_situations(
         "Content-Type": "text/xml; charset=utf-8",
         "SOAPAction": SITUATIONS_SOAP_ACTION,
         "Authorization": f"Bearer {api_key}",
-        "User-Agent": "swiss-road-mobility-mcp/0.2.0",
+        "User-Agent": USER_AGENT,
         "Accept-Encoding": "gzip, deflate",
     }
 

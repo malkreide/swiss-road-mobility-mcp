@@ -25,6 +25,7 @@ import time
 
 import httpx
 
+from . import USER_AGENT
 from .api_infrastructure import APIError, haversine_km
 from .egress import async_client
 
@@ -249,7 +250,7 @@ async def find_nearby_park_rail(
         timeout=15.0,
         follow_redirects=True,
         headers={
-            "User-Agent": "swiss-road-mobility-mcp/0.3.1",
+            "User-Agent": USER_AGENT,
             "Accept": "application/json",
         },
     ) as client:
@@ -355,7 +356,7 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
         timeout=15.0,
         follow_redirects=True,
         headers={
-            "User-Agent": "swiss-road-mobility-mcp/0.3.1",
+            "User-Agent": USER_AGENT,
             "Accept": "application/json",
         },
     ) as client:

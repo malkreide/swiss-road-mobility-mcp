@@ -26,6 +26,7 @@ import logging
 
 import httpx
 
+from . import USER_AGENT
 from .api_infrastructure import APIError, haversine_km
 from .egress import async_client
 
@@ -60,7 +61,7 @@ async def _find_nearest_station(latitude: float, longitude: float) -> dict | Non
 
     async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
-        headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
+        headers={"User-Agent": USER_AGENT},
     ) as client:
         try:
             resp = await client.get(LOCATIONS_URL, params=params)
@@ -107,7 +108,7 @@ async def _find_stations_by_name(query: str, limit: int = 5) -> list[dict]:
 
     async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
-        headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
+        headers={"User-Agent": USER_AGENT},
     ) as client:
         try:
             resp = await client.get(LOCATIONS_URL, params=params)
@@ -148,7 +149,7 @@ async def _get_connections(
 
     async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
-        headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
+        headers={"User-Agent": USER_AGENT},
     ) as client:
         try:
             resp = await client.get(CONNECTIONS_URL, params=params)

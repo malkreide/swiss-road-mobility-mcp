@@ -33,7 +33,16 @@ from typing import Any
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
+from . import (
+    __version__,
+    ev_charging,
+    geo_admin,
+    multimodal,
+    park_rail,
+    shared_mobility,
+    traffic_counters,
+    traffic_situations,
+)
 from .api_infrastructure import APIError, MobilityHTTPClient
 from .client_lifecycle import build_client, managed_client
 from .egress import async_client
@@ -609,8 +618,8 @@ async def road_check_status(ctx: Context) -> dict[str, Any]:
 
     return {
         "server": "swiss-road-mobility-mcp",
-        "version": "0.4.0",
-        "phase": "Phase 1 + Phase 2 + Phase 3 (Shared Mobility + E-Charging + DATEX II + Park & Rail + Multimodal)",
+        "version": __version__,
+        "phase": "Phase 1-4 (Shared Mobility + E-Charging + DATEX II + Park & Rail + Multimodal + geo.admin.ch)",
         "api_keys": {
             "phase_1": "KEINE – alle APIs sind komplett offen!",
             "phase_2": "OPENTRANSPORTDATA_API_KEY erforderlich (kostenlos: api-manager.opentransportdata.swiss)",

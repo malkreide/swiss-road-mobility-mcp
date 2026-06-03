@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 
 import httpx
 
+from . import USER_AGENT
 from .api_infrastructure import APIError, haversine_km
 from .egress import async_client
 
@@ -173,7 +174,7 @@ async def _soap_post(api_key: str, soap_action: str, body: str) -> ET.Element:
         "Content-Type": "text/xml; charset=utf-8",
         "SOAPAction": soap_action,
         "Authorization": f"Bearer {api_key}",
-        "User-Agent": "swiss-road-mobility-mcp/0.2.0",
+        "User-Agent": USER_AGENT,
         "Accept-Encoding": "gzip, deflate",
     }
 
