@@ -32,6 +32,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
 from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
+from .errors import unexpected_error, upstream_error
+from .logging_config import configure_logging
 from .security import BearerAuthMiddleware, RateLimitMiddleware, middleware_config
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
@@ -315,12 +317,9 @@ async def road_find_sharing(params: FindSharingInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -357,12 +356,9 @@ async def road_search_sharing(params: SearchSharingInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -394,12 +390,9 @@ async def road_sharing_providers() -> str:
         result = await shared_mobility.list_providers(_get_client())
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -444,12 +437,9 @@ async def road_find_charger(params: FindChargerInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -486,12 +476,9 @@ async def road_charger_status(params: ChargerStatusInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -780,12 +767,9 @@ async def road_traffic_situations(params: TrafficSituationsInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -912,12 +896,9 @@ async def road_traffic_counters(params: TrafficCountersInput) -> str:
         )
 
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -994,12 +975,9 @@ async def road_counter_sites(params: CounterSitesInput) -> str:
         )
 
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 # ===========================================================================
 # Input Models – Phase 3: Park & Rail
@@ -1194,12 +1172,9 @@ async def road_park_rail(params: ParkRailNearbyInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -1258,12 +1233,9 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -1323,12 +1295,9 @@ async def road_multimodal_plan(params: MultimodalPlanInput) -> str:
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"Unerwarteter Fehler: {e}"},
-            ensure_ascii=False,
-        )
+        return upstream_error(e)
+    except Exception:
+        return unexpected_error()
 
 
 # ===========================================================================
@@ -1476,11 +1445,8 @@ async def road_geocode_address(params: GeocodeAddressInput) -> str:
             limit=params.limit,
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"geo.admin.ch Geocoding-Fehler: {e}"},
-            ensure_ascii=False,
-        )
+    except Exception:
+        return unexpected_error("road_geocode_address")
 
 
 # ===========================================================================
@@ -1526,11 +1492,8 @@ async def road_reverse_geocode(params: ReverseGeocodeInput) -> str:
             limit=params.limit,
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"geo.admin.ch Reverse-Geocoding-Fehler: {e}"},
-            ensure_ascii=False,
-        )
+    except Exception:
+        return unexpected_error("road_reverse_geocode")
 
 
 # ===========================================================================
@@ -1590,11 +1553,8 @@ async def road_classify_road(params: ClassifyRoadInput) -> str:
             limit=params.limit,
         )
         return json.dumps(result, ensure_ascii=False, indent=2)
-    except Exception as e:
-        return json.dumps(
-            {"error": f"geo.admin.ch Strassenklassifikation-Fehler: {e}"},
-            ensure_ascii=False,
-        )
+    except Exception:
+        return unexpected_error("road_classify_road")
 
 
 
@@ -1618,10 +1578,7 @@ def _in_container() -> bool:
 
 def main():
     """Start the Swiss Road & Mobility MCP Server."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    )
+    configure_logging()  # OBS-003/OBS-004: structured option + explicit stderr
 
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 

@@ -196,9 +196,17 @@ class MobilityHTTPClient:
             response = await self._client.get(url, params=params)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            # OBS-002: log the raw upstream body server-side, but never surface
+            # it to the caller/LLM (information disclosure). The client sees a
+            # generic, status-only message.
+            logger.warning(
+                "Upstream HTTP %s from %s: %s",
+                e.response.status_code,
+                url,
+                e.response.text[:200],
+            )
             raise APIError(
-                f"HTTP {e.response.status_code} von {url}: "
-                f"{e.response.text[:200]}"
+                f"Die Datenquelle antwortete mit HTTP {e.response.status_code}."
             )
         except httpx.TimeoutException:
             raise APIError(f"Timeout nach 30s für {url}")
