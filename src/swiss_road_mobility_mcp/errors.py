@@ -16,8 +16,8 @@ stack traces and upstream response bodies must not leak into the model context
 
 from __future__ import annotations
 
-import json
 import logging
+from typing import Any
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -27,19 +27,19 @@ CODE_RATE_LIMIT = "RATE_LIMIT_EXCEEDED"
 CODE_EXECUTION = "EXECUTION_FAILED"
 
 
-def error_envelope(code: str, message: str) -> str:
-    """Serialise a structured execution error (JSON string).
+def error_envelope(code: str, message: str) -> dict[str, Any]:
+    """Build a structured execution-error result (SDK-002).
 
     Shape:
         {"isError": true, "error": {"code": "<CODE>", "message": "<text>"}}
+
+    Returned as a dict so FastMCP emits it as ``structuredContent`` (plus a
+    JSON text rendering), consistent with the success path.
     """
-    return json.dumps(
-        {"isError": True, "error": {"code": code, "message": message}},
-        ensure_ascii=False,
-    )
+    return {"isError": True, "error": {"code": code, "message": message}}
 
 
-def upstream_error(exc: Exception) -> str:
+def upstream_error(exc: Exception) -> dict[str, Any]:
     """Surface an ``APIError`` to the LLM.
 
     ``APIError`` messages are curated and user-safe (the raw upstream response
@@ -52,7 +52,7 @@ def upstream_error(exc: Exception) -> str:
     return error_envelope(code, message)
 
 
-def unexpected_error(context: str | None = None) -> str:
+def unexpected_error(context: str | None = None) -> dict[str, Any]:
     """Handle an unexpected exception (OBS-002).
 
     Must be called from within an ``except`` block: the active exception is
