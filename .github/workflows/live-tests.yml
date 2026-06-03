@@ -1,0 +1,32 @@
+name: Live API Tests
+
+# OPS-001: the live suite hits real upstream APIs (sharedmobility.ch,
+# ich-tanke-strom.ch, SBB Open Data, geo.admin.ch, transport.opendata.ch).
+# It is excluded from PR CI and runs nightly / on demand so that upstream
+# outages or schema drift are surfaced without breaking pull-request CI.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"   # nightly 04:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run live tests
+        run: pytest -m "live"
+        env:
+          # Phase-2 tools need a free key; live Phase-2 tests are skipped
+          # gracefully when the secret is not configured.
+          OPENTRANSPORTDATA_API_KEY: ${{ secrets.OPENTRANSPORTDATA_API_KEY }}

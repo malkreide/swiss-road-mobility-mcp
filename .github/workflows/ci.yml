@@ -34,6 +34,9 @@ jobs:
       - name: Import test
         run: python -c "from swiss_road_mobility_mcp.server import mcp; print('Import OK')"
 
+      - name: Unit tests (mocked, no live APIs)
+        run: pytest -m "not live"
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:
