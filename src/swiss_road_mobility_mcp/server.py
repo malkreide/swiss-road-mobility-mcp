@@ -29,7 +29,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
@@ -421,7 +421,7 @@ async def road_sharing_providers() -> str:
         "openWorldHint": True,
     },
 )
-async def road_find_charger(params: FindChargerInput) -> str:
+async def road_find_charger(params: FindChargerInput, ctx: Context) -> str:
     """Find EV charging stations near a location in Switzerland.
 
     Searches ich-tanke-strom.ch data for nearby charging stations
@@ -438,6 +438,14 @@ async def road_find_charger(params: FindChargerInput) -> str:
         charging power (kW), and operator information.
     """
     try:
+        await ctx.info(
+            f"Searching EV chargers within {params.radius_km} km of "
+            f"({params.latitude}, {params.longitude})"
+        )
+
+        async def _progress(done: float, total: float, message: str) -> None:
+            await ctx.report_progress(progress=done, total=total, message=message)
+
         result = await ev_charging.find_nearby_chargers(
             client=_get_client(),
             longitude=params.longitude,
@@ -446,7 +454,9 @@ async def road_find_charger(params: FindChargerInput) -> str:
             only_available=params.only_available,
             include_details=params.include_details,
             limit=params.limit,
+            on_progress=_progress,
         )
+        await ctx.info(f"Found {result.get('total_found', 0)} charging stations")
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
         return upstream_error(e)
@@ -507,7 +517,7 @@ async def road_charger_status(params: ChargerStatusInput) -> str:
         "openWorldHint": False,
     },
 )
-async def road_check_status() -> str:
+async def road_check_status(ctx: Context) -> str:
     """Check the health of all road mobility data sources.
 
     Tests connectivity to sharedmobility.ch and ich-tanke-strom.ch.
@@ -555,9 +565,11 @@ async def road_check_status() -> str:
         },
     }
 
+    await ctx.info(f"Checking {len(checks)} data-source endpoints")
     results = {}
     async with async_client(timeout=10.0) as test_client:
-        for name, info in checks.items():
+        for idx, (name, info) in enumerate(checks.items(), start=1):
+            await ctx.report_progress(progress=idx, total=len(checks), message=f"Checking {name}")
             needs_key = info.get("api_key_required", False)
             has_key = bool(os.environ.get("OPENTRANSPORTDATA_API_KEY"))
             if needs_key and not has_key:
@@ -1202,7 +1214,7 @@ async def road_park_rail(params: ParkRailNearbyInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_mobility_snapshot(params: MobilitySnapshotInput) -> str:
+async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) -> str:
     """Get a complete mobility picture for any Swiss location in one call.
 
     Aggregates in parallel:
@@ -1233,6 +1245,10 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput) -> str:
     """
     try:
         api_key = _get_api_key()
+        await ctx.info(
+            f"Aggregating mobility snapshot for ({params.latitude}, {params.longitude}) "
+            f"across shared mobility, EV charging, Park & Rail and rail"
+        )
         result = await multimodal.build_mobility_snapshot(
             latitude=params.latitude,
             longitude=params.longitude,
@@ -1242,6 +1258,7 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput) -> str:
             has_api_key=bool(api_key),
             api_key=api_key,
         )
+        await ctx.report_progress(progress=1.0, total=1.0, message="Snapshot complete")
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
         return upstream_error(e)
@@ -1263,7 +1280,7 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_multimodal_plan(params: MultimodalPlanInput) -> str:
+async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> str:
     """Plan a multimodal trip: Drive → Park & Rail → Train → Destination.
 
     The «Holy Grail» of Phase 3: combines all data sources into a
@@ -1298,12 +1315,17 @@ async def road_multimodal_plan(params: MultimodalPlanInput) -> str:
         - last_mile_sharing: Sharing options at start location
     """
     try:
+        await ctx.info(
+            f"Planning multimodal trip from ({params.start_latitude}, "
+            f"{params.start_longitude}) to {params.destination!r}"
+        )
         result = await multimodal.plan_multimodal_trip(
             start_latitude=params.start_latitude,
             start_longitude=params.start_longitude,
             destination=params.destination,
             park_rail_radius_km=params.park_rail_radius_km,
         )
+        await ctx.report_progress(progress=1.0, total=1.0, message="Trip plan ready")
         return json.dumps(result, ensure_ascii=False, indent=2)
     except APIError as e:
         return upstream_error(e)
