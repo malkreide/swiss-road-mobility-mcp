@@ -275,7 +275,8 @@ swiss_road_mobility_mcp/
 **In-depth docs:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (MCP primitives,
 tool namespacing, use-case catalogue, phase roadmap) ·
 [`docs/SECURITY.md`](docs/SECURITY.md) (credential model, egress allow-list, auth,
-MCP conformance table).
+MCP conformance table) ·
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md) (resource limits, restart policy, health).
 
 ---
 

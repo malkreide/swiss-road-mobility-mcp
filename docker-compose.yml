@@ -1,0 +1,51 @@
+# Resource-bounded, hardened run for self-hosting (SCALE-006 + SEC-007).
+# Usage:  docker compose up --build
+#
+# Render (managed) enforces plan-level memory/CPU and auto-restarts on crash;
+# this file makes the same guarantees explicit for Docker / Compose / swarm and
+# documents the intended limits. See docs/OPERATIONS.md.
+
+services:
+  swiss-road-mobility-mcp:
+    build: .
+    image: swiss-road-mobility-mcp:latest
+    restart: unless-stopped            # SCALE-006: auto-recover from crash / OOM-kill
+
+    environment:
+      MCP_TRANSPORT: sse
+      MCP_HOST: "0.0.0.0"              # safe: the container network is isolated
+      MCP_PORT: "8001"
+      MCP_LOG_FORMAT: json
+      # SEC-009: set a token before exposing the port publicly.
+      # MCP_AUTH_TOKEN: "change-me"
+
+    # Bind to host localhost by default; put a reverse proxy / tunnel in front
+    # for public exposure (and set MCP_AUTH_TOKEN).
+    ports:
+      - "127.0.0.1:8001:8001"
+
+    # --- SCALE-006: hard resource limits -----------------------------------
+    mem_limit: 256m                    # memory cap (OOM-kill above this)
+    mem_reservation: 128m              # soft target
+    cpus: 0.50                         # CPU cap
+    pids_limit: 256                    # cap thread/process explosion
+    ulimits:
+      nofile:                          # file-descriptor cap
+        soft: 1024
+        hard: 2048
+
+    # --- SEC-007: runtime hardening ----------------------------------------
+    read_only: true                    # read-only root filesystem
+    tmpfs:
+      - /tmp                           # only writable area the process needs
+    cap_drop:
+      - ALL                            # drop all Linux capabilities
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,socket; socket.create_connection(('127.0.0.1', int(os.environ.get('MCP_PORT','8001'))), timeout=3).close()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
