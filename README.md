@@ -167,6 +167,20 @@ API quota), configure these environment variables on the host:
 The local **stdio** transport needs none of this — it runs in the user's
 trusted context.
 
+#### Observability (OBS-003 / OBS-006)
+
+| Variable | Effect |
+|---|---|
+| `MCP_LOG_LEVEL` | Log level: `DEBUG` / `INFO` (default) / `WARNING` / `ERROR`. |
+| `MCP_LOG_FORMAT` | `text` (default) or `json` for structured logs. All logs go to **stderr**. |
+| `MCP_TRACING_ENABLED` | `true` enables OpenTelemetry tracing (off by default). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector URL; setting it also enables tracing. Standard `OTEL_*` vars are honoured by the SDK. |
+
+Tracing needs the optional extra: `pip install 'swiss-road-mobility-mcp[tracing]'`.
+Once enabled, every upstream API call is traced automatically (httpx
+instrumentation) and SSE requests get server spans with W3C trace-context
+propagation.
+
 ---
 
 ## Available Tools
