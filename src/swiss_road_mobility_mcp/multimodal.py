@@ -154,9 +154,12 @@ async def _get_connections(
             resp.raise_for_status()
             data = resp.json()
         except httpx.HTTPStatusError as e:
+            logger.warning(
+                "transport.opendata.ch HTTP %s: %s",
+                e.response.status_code, e.response.text[:200],
+            )
             raise APIError(
-                f"transport.opendata.ch HTTP {e.response.status_code}: "
-                f"{e.response.text[:200]}"
+                f"transport.opendata.ch antwortete mit HTTP {e.response.status_code}."
             )
         except httpx.TimeoutException:
             raise APIError(f"Timeout bei ÖV-Abfrage ({from_station} → {to_destination}).")
@@ -293,7 +296,7 @@ async def build_mobility_snapshot(
             results[key] = await coro
         except Exception as e:
             logger.warning(f"Snapshot-Teilabfrage '{key}' fehlgeschlagen: {e}")
-            results[key] = {"error": str(e)}
+            results[key] = {"error": "Diese Teilquelle ist momentan nicht verfügbar."}
 
     # ── Optionale Phase-2-Daten ────────────────────────────────────────────
     if has_api_key and api_key:
@@ -306,7 +309,8 @@ async def build_mobility_snapshot(
                 limit=5,
             )
         except Exception as e:
-            results["traffic_situations"] = {"error": str(e)}
+            logger.warning("Snapshot Phase-2 'traffic_situations' fehlgeschlagen: %s", e)
+            results["traffic_situations"] = {"error": "Verkehrsmeldungen momentan nicht verfügbar."}
     else:
         results["traffic_situations"] = {
             "note": "Phase-2-Daten (Verkehrsmeldungen) benötigen OPENTRANSPORTDATA_API_KEY.",
