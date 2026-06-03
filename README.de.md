@@ -246,7 +246,8 @@ swiss_road_mobility_mcp/
 **Vertiefende Doku:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (MCP-Primitive,
 Tool-Namespacing, Use-Case-Katalog, Phasen-Roadmap) ·
 [`docs/SECURITY.md`](docs/SECURITY.md) (Credential-Modell, Egress-Allow-List, Auth,
-MCP-Konformitätstabelle).
+MCP-Konformitätstabelle) ·
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md) (Resource-Limits, Restart-Policy, Health).
 
 ---
 

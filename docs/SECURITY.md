@@ -46,6 +46,7 @@ If a future phase introduces a higher-value secret, migrate to a secret manager
 |---|---|---|
 | Default bind `127.0.0.1` (0.0.0.0 only in containers) | SEC-016 | `server._in_container` / `_run_sse` |
 | Outbound egress **allow-list** (per request, incl. redirects) | SEC-004 / SEC-021 | `egress.py` |
+| **Resolved-IP guard** (reject hosts resolving to private/internal IPs) | SEC-005 | `egress.py` (`_assert_resolves_public`) |
 | SSE **Bearer auth** (optional) + per-IP **rate limiting** | SEC-009 | `security.py` |
 | CORS with explicit `expose_headers=[Mcp-Session-Id]` | SDK-004 | `server._run_sse` |
 | Container runs **non-root** + healthcheck | SEC-007 | `Dockerfile` |
@@ -78,9 +79,10 @@ Status of the server against the MCP build/security checklist. ✅ = addressed,
 | 17 | Resources/Prompts audited | ✅ | ARCH-008 ([ARCHITECTURE.md](./ARCHITECTURE.md)) |
 | 18 | Dependency pinning + Dependabot | ✅ | ARCH-012 |
 | 19 | Phase declaration / roadmap | ✅ | OPS-003 ([ARCHITECTURE.md](./ARCHITECTURE.md)) |
-| 20 | Resource/CPU/FD limits | ⚪ | SCALE-006 — owned by the deploy platform |
-| 21 | Gateway allow-list / tool-poisoning detection | ⚪ | SEC-014/015 — only relevant behind a multi-server gateway |
-| 22 | Sticky-session / shared state | ⚪ | SCALE-002/003 — only for horizontal scaling |
+| 20 | Resolved-IP / DNS-rebinding guard | ✅ | SEC-005 (`egress.py`) |
+| 21 | Resource/CPU/FD/PID limits + restart policy | ✅ | SCALE-006 (`docker-compose.yml`, [OPERATIONS.md](./OPERATIONS.md)) |
+| 22 | Gateway allow-list / tool-poisoning detection | ⚪ | SEC-014/015 — only relevant behind a multi-server gateway |
+| 23 | Sticky-session / shared state | ⚪ | SCALE-002/003 — only for horizontal scaling |
 
 ## Reporting
 
