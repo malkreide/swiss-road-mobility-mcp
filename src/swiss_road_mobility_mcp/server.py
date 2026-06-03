@@ -35,6 +35,7 @@ from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
 from .errors import unexpected_error, upstream_error
 from .logging_config import configure_logging
 from .security import BearerAuthMiddleware, RateLimitMiddleware, middleware_config
+from .tracing import configure_tracing, instrument_asgi
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -1579,6 +1580,7 @@ def _in_container() -> bool:
 def main():
     """Start the Swiss Road & Mobility MCP Server."""
     configure_logging()  # OBS-003/OBS-004: structured option + explicit stderr
+    configure_tracing()  # OBS-006: optional OpenTelemetry (off unless configured)
 
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 
@@ -1654,6 +1656,9 @@ def _run_sse(host: str, port: int) -> None:
             allow_headers=["Content-Type", "Mcp-Session-Id", "Authorization"],
             expose_headers=["Mcp-Session-Id"],  # SDK-004: critical for browser clients
         )
+        # OBS-006: outermost wrapper so server spans cover the full request and
+        # W3C trace-context is extracted from inbound headers (no-op if tracing off).
+        app = instrument_asgi(app)
         uvicorn.run(app, host=host, port=port)
     except Exception:
         logger.exception("Hardened SSE app unavailable; falling back to plain SSE")

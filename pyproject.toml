@@ -39,6 +39,19 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "respx>=0.21.0",
     "ruff>=0.4.0",
+    # OBS-006: installed in dev so the tracing tests run in CI.
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+    "opentelemetry-instrumentation-httpx>=0.41b0",
+    "opentelemetry-instrumentation-asgi>=0.41b0",
+]
+# OBS-006: optional distributed tracing. Install with:
+#   pip install 'swiss-road-mobility-mcp[tracing]'
+tracing = [
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+    "opentelemetry-instrumentation-httpx>=0.41b0",
+    "opentelemetry-instrumentation-asgi>=0.41b0",
 ]
 
 [project.scripts]
