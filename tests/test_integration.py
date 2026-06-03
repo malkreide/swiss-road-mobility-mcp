@@ -30,6 +30,10 @@ from swiss_road_mobility_mcp.ev_charging import (
     get_charger_status,
 )
 
+# OPS-001: this module hits real APIs — run nightly / manually, never in PR CI.
+# Excluded via `pytest -m "not live"`.
+pytestmark = pytest.mark.live
+
 
 # ===========================================================================
 # Fixtures

@@ -21,6 +21,10 @@ import json
 import pytest
 import pytest_asyncio
 
+# OPS-001: this module hits real APIs (Live-Tests gegen offene APIs) — run
+# nightly / manually, never in PR CI. Excluded via `pytest -m "not live"`.
+pytestmark = pytest.mark.live
+
 # ---------------------------------------------------------------------------
 # Test-Konfiguration
 # ---------------------------------------------------------------------------
