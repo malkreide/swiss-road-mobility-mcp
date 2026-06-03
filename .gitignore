@@ -1,0 +1,31 @@
+# Secrets / local environment (ARCH-005)
+.env
+.env.*
+!.env.example
+*.secrets
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1601,6 +1601,20 @@ async def road_classify_road(params: ClassifyRoadInput) -> str:
 # Entry point
 # ===========================================================================
 
+def _in_container() -> bool:
+    """Heuristik: läuft der Prozess in einem Container / Cloud-Runtime?
+
+    Nur dann ist ein 0.0.0.0-Binding legitim (Netzwerk-Isolation durch die
+    Plattform). Lokal ist es ein Sicherheitsrisiko (siehe SEC-016).
+    """
+    return (
+        os.path.exists("/.dockerenv")
+        or bool(os.environ.get("KUBERNETES_SERVICE_HOST"))
+        or bool(os.environ.get("RENDER"))
+        or bool(os.environ.get("RAILWAY_PROJECT_ID"))
+    )
+
+
 def main():
     """Start the Swiss Road & Mobility MCP Server."""
     logging.basicConfig(
@@ -1611,8 +1625,20 @@ def main():
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 
     if transport == "sse":
-        host = os.environ.get("MCP_HOST", "0.0.0.0")
+        # SEC-016: Default auf 127.0.0.1 (localhost only). Das Binden an alle
+        # Interfaces (0.0.0.0) gehört ausschliesslich in den Container-Kontext
+        # (Dockerfile / render.yaml setzen MCP_HOST=0.0.0.0 explizit). Ein
+        # 0.0.0.0-Default im Code würde einen lokal gestarteten SSE-Server für
+        # das gesamte Subnetz erreichbar machen (NeighborJack).
+        host = os.environ.get("MCP_HOST", "127.0.0.1")
         port = int(os.environ.get("MCP_PORT", "8001"))
+        if host in ("0.0.0.0", "::") and not _in_container():
+            logger.warning(
+                "Binding to %s outside a container context exposes this MCP "
+                "server to the local network (NeighborJack risk). Use "
+                "MCP_HOST=127.0.0.1 for local development.",
+                host,
+            )
         logger.info(f"Starting SSE server on {host}:{port}")
         mcp.run(transport="sse", host=host, port=port)
     else:
