@@ -19,10 +19,23 @@ haben wir ein Telefonbuch im Schrank.
 """
 
 import logging
+from collections.abc import Awaitable, Callable
 
 from .api_infrastructure import APIError, MobilityHTTPClient, haversine_km
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
+
+# Optional progress callback: (done, total, message) -> awaitable (SDK-003).
+ProgressCallback = Callable[[float, float, str], Awaitable[None]]
+
+
+async def _report(
+    cb: ProgressCallback | None, done: float, total: float, message: str
+) -> None:
+    """Invoke the progress callback if one was supplied (no-op otherwise)."""
+    if cb is not None:
+        await cb(done, total, message)
+
 
 # Endpunkte für ich-tanke-strom.ch Daten
 GEOJSON_URL = (
@@ -242,6 +255,7 @@ async def find_nearby_chargers(
     only_available: bool = False,
     include_details: bool = True,
     limit: int = 20,
+    on_progress: ProgressCallback | None = None,
 ) -> dict:
     """
     Sucht E-Ladestationen im Umkreis einer Koordinate.
@@ -258,9 +272,14 @@ async def find_nearby_chargers(
         include_details: Stammdaten anreichern (Stecker, Betreiber etc.)
         limit: Max. Ergebnisse
     """
+    # SDK-003: granular progress over the (sequential) data loads.
+    total_steps = 3.0 if include_details else 2.0
+
     # 1. Stationen und Status laden
     features = await _load_stations(client)
+    await _report(on_progress, 1, total_steps, f"{len(features)} Ladestationen geladen")
     status_map = await _load_status(client)
+    await _report(on_progress, 2, total_steps, "Echtzeit-Status geladen")
 
     # 2. Details laden (optional, grosse Datei)
     details: dict[str, dict] = {}
@@ -269,6 +288,7 @@ async def find_nearby_chargers(
             details = await _load_station_details(client)
         except Exception as e:
             logger.warning(f"Details konnten nicht geladen werden: {e}")
+        await _report(on_progress, 3, total_steps, "Detaildaten geladen")
 
     # 3. Filtern nach Distanz
     results = []
