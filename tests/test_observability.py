@@ -21,7 +21,6 @@ from swiss_road_mobility_mcp.errors import (
 )
 from swiss_road_mobility_mcp.logging_config import JsonFormatter, configure_logging
 
-
 # ===========================================================================
 # OBS-001 — structured execution errors with stable codes
 # ===========================================================================
@@ -67,9 +66,9 @@ class TestMasking:
     async def test_apierror_does_not_leak_upstream_body(self):
         client = MobilityHTTPClient()
         try:
-            respx.get("https://example.test/x").respond(500, text="DB STACKTRACE SECRET")
+            respx.get("https://data.geo.admin.ch/x").respond(500, text="DB STACKTRACE SECRET")
             with pytest.raises(APIError) as exc:
-                await client.get_json("https://example.test/x")
+                await client.get_json("https://data.geo.admin.ch/x")
             msg = str(exc.value)
             assert "SECRET" not in msg and "STACKTRACE" not in msg
             assert "500" in msg

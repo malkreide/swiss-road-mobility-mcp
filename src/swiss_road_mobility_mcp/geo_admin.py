@@ -23,7 +23,7 @@ import logging
 import re
 from typing import Any
 
-import httpx
+from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -185,7 +185,7 @@ async def geocode_address(
         "sr":         "4326",
     }
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with async_client(timeout=TIMEOUT) as client:
         resp = await client.get(SEARCH_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
@@ -245,7 +245,7 @@ async def reverse_geocode(
         "limit":          str(min(limit, 10)),
     }
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with async_client(timeout=TIMEOUT) as client:
         resp = await client.get(IDENTIFY_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
@@ -320,7 +320,7 @@ async def classify_road(
         "returnGeometry": "false",
     }
 
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+    async with async_client(timeout=TIMEOUT) as client:
         resp = await client.get(IDENTIFY_URL, params=params)
         resp.raise_for_status()
         data = resp.json()

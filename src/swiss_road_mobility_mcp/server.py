@@ -32,6 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import ev_charging, geo_admin, multimodal, park_rail, shared_mobility, traffic_counters, traffic_situations
 from .api_infrastructure import APIError, MobilityHTTPClient, RateLimiter
+from .egress import async_client
 from .errors import unexpected_error, upstream_error
 from .logging_config import configure_logging
 from .security import BearerAuthMiddleware, RateLimitMiddleware, middleware_config
@@ -505,7 +506,6 @@ async def road_check_status() -> str:
     Returns:
         JSON with status of each API endpoint.
     """
-    import httpx
 
     checks = {
         "shared_mobility_api": {
@@ -546,7 +546,7 @@ async def road_check_status() -> str:
     }
 
     results = {}
-    async with httpx.AsyncClient(timeout=10.0) as test_client:
+    async with async_client(timeout=10.0) as test_client:
         for name, info in checks.items():
             needs_key = info.get("api_key_required", False)
             has_key = bool(os.environ.get("OPENTRANSPORTDATA_API_KEY"))

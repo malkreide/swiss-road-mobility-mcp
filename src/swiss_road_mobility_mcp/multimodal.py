@@ -27,6 +27,7 @@ import logging
 import httpx
 
 from .api_infrastructure import APIError, haversine_km
+from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -57,7 +58,7 @@ async def _find_nearest_station(latitude: float, longitude: float) -> dict | Non
         "type": "station",
     }
 
-    async with httpx.AsyncClient(
+    async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
         headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
     ) as client:
@@ -104,7 +105,7 @@ async def _find_stations_by_name(query: str, limit: int = 5) -> list[dict]:
         "limit": limit,
     }
 
-    async with httpx.AsyncClient(
+    async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
         headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
     ) as client:
@@ -145,7 +146,7 @@ async def _get_connections(
         "limit": limit,
     }
 
-    async with httpx.AsyncClient(
+    async with async_client(
         timeout=_TRANSPORT_TIMEOUT,
         headers={"User-Agent": "swiss-road-mobility-mcp/0.3.1"},
     ) as client:

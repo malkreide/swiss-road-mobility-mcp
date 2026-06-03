@@ -26,6 +26,7 @@ import time
 import httpx
 
 from .api_infrastructure import APIError, haversine_km
+from .egress import async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -244,7 +245,7 @@ async def find_nearby_park_rail(
         "timezone": "Europe/Zurich",
     }
 
-    async with httpx.AsyncClient(
+    async with async_client(
         timeout=15.0,
         follow_redirects=True,
         headers={
@@ -350,7 +351,7 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
         "timezone": "Europe/Zurich",
     }
 
-    async with httpx.AsyncClient(
+    async with async_client(
         timeout=15.0,
         follow_redirects=True,
         headers={

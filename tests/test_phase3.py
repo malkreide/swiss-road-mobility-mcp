@@ -18,8 +18,8 @@ Hinweis: Live-Tests können bei Netzwerkproblemen fehlschlagen.
 """
 
 import json
+
 import pytest
-import pytest_asyncio
 
 # OPS-001: this module hits real APIs (Live-Tests gegen offene APIs) — run
 # nightly / manually, never in PR CI. Excluded via `pytest -m "not live"`.
@@ -344,7 +344,6 @@ class TestPhase3Tools:
     async def test_road_park_rail_tool(self):
         """Testet das road_park_rail Tool via Server."""
         import sys
-        import os
         # Server importieren
         sys.path.insert(0, "src")
 
@@ -397,7 +396,7 @@ if __name__ == "__main__":
         """Schneller Smoke-Test ohne pytest."""
         print("🧪 Phase 3 Quick Check...\n")
 
-        from src.swiss_road_mobility_mcp import park_rail, multimodal
+        from src.swiss_road_mobility_mcp import multimodal, park_rail
 
         print("1️⃣  Park & Rail (Zürich, 5km)...")
         pr = await park_rail.find_nearby_park_rail(47.3769, 8.5417, 5.0, 5)

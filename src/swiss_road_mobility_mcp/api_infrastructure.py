@@ -21,6 +21,8 @@ from typing import Any
 
 import httpx
 
+from .egress import async_client
+
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
 
@@ -138,7 +140,7 @@ class MobilityHTTPClient:
     def __init__(self):
         self._cache = SimpleCache()
         self._rate_limiters: dict[str, RateLimiter] = {}
-        self._client = httpx.AsyncClient(
+        self._client = async_client(
             timeout=30.0,
             follow_redirects=True,
             headers={

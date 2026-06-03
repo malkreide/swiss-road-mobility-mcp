@@ -5,7 +5,6 @@ TestClient — no `mcp` import, no network, so they run in PR CI
 (`pytest -m "not live"`).
 """
 
-import pytest
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
