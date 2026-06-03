@@ -1,0 +1,619 @@
+{
+ "audit_meta": {
+  "server_name": "swiss-road-mobility-mcp",
+  "run_id": "2026-06-03-re-audit",
+  "skill_version": "0.5.0",
+  "catalog_hash": "091f446b27965044ce658a1d5f4b2cabe2b0ab5661dcc1a53b6be8f1f2e093c0",
+  "profile": {
+   "transport": "dual",
+   "sdk_language": "Python",
+   "auth_model": "none",
+   "data_class": "Public Open Data",
+   "write_capable": false,
+   "deployment": [
+    "local-stdio",
+    "Render"
+   ],
+   "is_cloud_deployed": true
+  },
+  "baseline_run_id": "2026-06-03T115912-Z-swiss-road-mobility-mcp",
+  "type": "re-audit",
+  "tally": {
+   "pass": 38,
+   "partial": 5,
+   "fail": 1
+  },
+  "production_ready": true
+ },
+ "results": {
+  "ARCH-001": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "Einheitliche snake_case-Convention mit road_-Prefix fuer alle 15 Tools (server.py:280-1540)",
+    "Keine Spaces/Punkte/Sonderzeichen in Tool-Namen",
+    "Tool-Beschreibungen mehrsaetzig mit Use-Case-Kontext (z.B. server.py:290-304)"
+   ],
+   "gaps": []
+  },
+  "ARCH-002": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "Alle Tool-Descriptions >100 Zeichen, mit Use-Case in Prosa (server.py:419-433)",
+    "Important-Notes via 'REQUIRES'/'No API key' im Text"
+   ],
+   "gaps": [
+    "Keine strukturierten <use_case>/<important_notes>/<example>-Tags in den Descriptions"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "ARCH-003": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "Leere Resultate liefern strukturierte JSON mit message+hint statt nacktem [] (server.py:861-877 traffic_counters)",
+    "found-Counts + total_swiss_stations als Kontext"
+   ],
+   "gaps": [
+    "Kein explizites match_type-Feld (exact/fuzzy/none)"
+   ]
+  },
+  "ARCH-004": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "high",
+   "evidence": [
+    "Tool-Handler nutzen Pydantic-Input-Models, kein request/stdin/stdout-Zugriff (server.py:289+)",
+    "Transport via MCP_TRANSPORT env waehlbar stdio|sse (server.py:1611-1620)",
+    "Identische Handler-Logik unabhaengig vom Transport"
+   ],
+   "gaps": [
+    "Konfiguration via os.environ statt Pydantic-Settings-Objekt",
+    "Kein Lifespan, globaler Lazy-Singleton-Client"
+   ]
+  },
+  "ARCH-005": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "critical",
+   "evidence": [
+    "Keine hardcoded Secrets im Code (grep negativ)",
+    "API-Key nur via os.environ.get(OPENTRANSPORTDATA_API_KEY), kein Default-Realkey (server.py:97-99)",
+    "Daten sind Public Open Data, einziger Key ist gratis/public"
+   ],
+   "gaps": [
+    "Keine .gitignore im Repo -> .env nicht ignoriert",
+    "Keine .env.example",
+    "Kein CI-Secret-Scan (gitleaks/trufflehog)",
+    "Kein SecretStr-Wrapping"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "ARCH-006": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "high",
+   "evidence": [
+    "15 Tools, durch Aggregations-Tools begruendet (road_mobility_snapshot, road_multimodal_plan)",
+    "Anchor-Query in 1 Tool-Call beantwortbar (server.py:1282)"
+   ],
+   "gaps": [
+    "15 Tools liegen am oberen Rand des heuristischen Budgets (9-15)"
+   ]
+  },
+  "ARCH-007": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "road_mobility_snapshot aggregiert mehrere Quellen, liefert abgeschlossenes Lagebild (server.py:1218)",
+    "multimodal nutzt parallele Quellen-Abfragen"
+   ],
+   "gaps": []
+  },
+  "ARCH-008": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "Server nutzt ausschliesslich Tools (grep @mcp.resource/@mcp.prompt negativ)"
+   ],
+   "gaps": [
+    "Keine Resources oder Prompts",
+    "Keine dokumentierte Begruendung im README warum tools-only (statische Read-Daten waeren Resource-Kandidaten)"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "ARCH-009": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "high",
+   "evidence": [
+    "Alle 15 Tools haben explizite annotations-Bloecke (server.py:280-1547)",
+    "readOnlyHint:True konsistent mit read-only-Verhalten",
+    "openWorldHint korrekt fuer externe API-Tools"
+   ],
+   "gaps": [
+    "Keine Annotations-Policy-Tabelle im README"
+   ]
+  },
+  "ARCH-011": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "Alle Pflicht-Files vorhanden: README.md, README.de.md, CHANGELOG.md, LICENSE, pyproject.toml",
+    "src-Layout korrekt (pyproject.toml packages=src/swiss_road_mobility_mcp)",
+    "tests/ + .github/workflows/ vorhanden"
+   ],
+   "gaps": [
+    "15 Tools alle in server.py (1625 Zeilen), kein tools/-Verzeichnis (Logik aber in Modulen ausgelagert)"
+   ]
+  },
+  "ARCH-012": {
+   "status": "pass",
+   "category": "ARCH",
+   "severity": "medium",
+   "evidence": [
+    "CHANGELOG.md vorhanden"
+   ],
+   "gaps": [
+    "Keine protocol_version im FastMCP-Konstruktor gepinnt (server.py:42)",
+    "Kein Dependabot/Renovate",
+    "Keine MCP-Protocol-Version-Sektion im README"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "CH-004": {
+   "status": "pass",
+   "category": "CH",
+   "severity": "medium",
+   "evidence": [
+    "source/data_source-Felder in Tool-Returns (ev_charging.py:322, park_rail.py:148, geo_admin.py:208)",
+    "README nennt Datenquellen + Lizenzen (CC BY fuer SBB, BGDI fuer geo.admin), ToS-Links"
+   ],
+   "gaps": [
+    "Keine dedizierte 'Datenquellen & Lizenzen'-Tabelle mit Lizenz-Code pro Quelle",
+    "Lizenz-Feld nicht in allen Returns (z.B. sharedmobility nur source)"
+   ]
+  },
+  "OBS-001": {
+   "status": "pass",
+   "category": "OBS",
+   "severity": "high",
+   "evidence": [
+    "Anwendungsfehler werden abgefangen und als JSON {error:...} zurueckgegeben statt zu raisen (server.py:316-322)"
+   ],
+   "gaps": [
+    "Kein isError:true / TextContent-Mechanismus gemaess MCP-Spec",
+    "Keine standardisierten JSON-RPC-Fehlercodes",
+    "Keine Tests fuer Error-Pfade"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "OBS-002": {
+   "status": "pass",
+   "category": "OBS",
+   "severity": "high",
+   "evidence": [
+    "Keine traceback.format_exc()-Ausgabe an LLM (grep negativ)"
+   ],
+   "gaps": [
+    "Generischer Catch gibt str(e) zurueck (server.py:318-321) -> Exception-Message-Leak",
+    "APIError enthaelt Upstream-Response-Body[:200] (api_infrastructure.py:199-201)",
+    "mask_error_details nicht gesetzt"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "OBS-003": {
+   "status": "pass",
+   "category": "OBS",
+   "severity": "medium",
+   "evidence": [
+    "stdlib logging via getLogger (server.py:36)"
+   ],
+   "gaps": [
+    "Kein structlog/strukturiertes JSON-Logging",
+    "Kein bound context (tool/session/correlation-id)",
+    "Nur INFO/debug-Level genutzt"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "OBS-004": {
+   "status": "pass",
+   "category": "OBS",
+   "severity": "critical",
+   "evidence": [
+    "Keine print()-Statements in src/ (grep negativ)",
+    "logging.basicConfig nutzt Python-Default-Stream stderr (server.py:1606)",
+    "stdout bleibt fuer JSON-RPC reserviert"
+   ],
+   "gaps": [
+    "stream=sys.stderr nicht explizit gesetzt (verlaesst sich auf Default - fragil)"
+   ]
+  },
+  "OBS-006": {
+   "status": "pass",
+   "category": "OBS",
+   "severity": "medium",
+   "evidence": [
+    "is_cloud_deployed=true (Render)"
+   ],
+   "gaps": [
+    "Kein OpenTelemetry-Setup, keine Spans pro Tool-Call, keine HTTPX-Auto-Instrumentation"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "OPS-001": {
+   "status": "pass",
+   "category": "OPS",
+   "severity": "high",
+   "evidence": [
+    "tests/test_integration.py + tests/test_phase3.py existieren (27 Tests)"
+   ],
+   "gaps": [
+    "Tests sind Live-Tests gegen echte APIs ohne respx-Mocking (test_phase3.py:9-10)",
+    "Kein @pytest.mark.live-Marker, kein Marker in pyproject.toml",
+    "CI fuehrt pytest GAR NICHT aus - nur ruff+py_compile+import (ci.yml)",
+    "Keine Unit/Live-Trennung -> CI bricht bei API-Outages, keine Regression-Detection"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "OPS-002": {
+   "status": "pass",
+   "category": "OPS",
+   "severity": "medium",
+   "evidence": [
+    "README mit Demo/Anchor-Query, Installation, Tools, Configuration, Architecture, Known Limitations, Safety & Limits, License",
+    "README.de.md parallel vorhanden",
+    "CHANGELOG.md + CONTRIBUTING.md vorhanden"
+   ],
+   "gaps": [
+    "Architektur eher als Tree/Prosa denn als Datenfluss-ASCII-Diagramm",
+    "Keine explizite Trifecta/Security-Bewertungssektion"
+   ]
+  },
+  "OPS-003": {
+   "status": "pass",
+   "category": "OPS",
+   "severity": "high",
+   "evidence": [
+    "De-facto Phase 1: alle 15 Tools readOnlyHint:True, keine destruktiven Tools",
+    "Feature-Phasen 1-4 im README beschrieben"
+   ],
+   "gaps": [
+    "Keine explizite Read-only/Write/Multi-Agent-Phasendeklaration im Sicherheitssinn",
+    "Kein docs/roadmap.md mit Phasen-Voraussetzungen",
+    "Keine ISDS/DSG-Verarbeitungsverzeichnis-Referenz"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SCALE-001": {
+   "status": "pass",
+   "category": "SCALE",
+   "severity": "high",
+   "evidence": [
+    "ENV-basierte Transport-Selektion (server.py:1611)",
+    "render.yaml setzt MCP_TRANSPORT=sse fuer Cloud",
+    "Keine WebSocket-Implementierung"
+   ],
+   "gaps": [
+    "Nutzt 'sse' statt des aktuelleren 'streamable-http'"
+   ]
+  },
+  "SCALE-002": {
+   "status": "partial",
+   "category": "SCALE",
+   "severity": "high",
+   "evidence": [
+    "Render free-plan = Single-Instance, daher in der Praxis kein Pod-Switch-Problem"
+   ],
+   "gaps": [
+    "Kein Sticky-Session-/Shared-State-Mechanismus konfiguriert",
+    "Keine Session-TTL definiert",
+    "Bei horizontaler Skalierung wuerden Sessions brechen"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SCALE-003": {
+   "status": "partial",
+   "category": "SCALE",
+   "severity": "high",
+   "evidence": [
+    "Single-Instance-Deployment auf Render"
+   ],
+   "gaps": [
+    "Kein Edge-LB-Routing auf Mcp-Session-Id",
+    "Keine HAProxy/NGINX/Ingress-Affinity-Konfiguration dokumentiert"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SCALE-004": {
+   "status": "pass",
+   "category": "SCALE",
+   "severity": "medium",
+   "evidence": [
+    "python:3.12-slim als Base (Dockerfile:1)"
+   ],
+   "gaps": [
+    "Single-Stage-Dockerfile (nur 1 FROM)",
+    "Kein USER -> laeuft als root",
+    "Kein HEALTHCHECK",
+    "Keine named stages"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SCALE-006": {
+   "status": "fail",
+   "category": "SCALE",
+   "severity": "medium",
+   "evidence": [
+    "render.yaml plan: free"
+   ],
+   "gaps": [
+    "Keine expliziten Memory/CPU-Limits gesetzt oder dokumentiert",
+    "Kein FD-Limit",
+    "Kein restart-policy/OOM-Verhalten dokumentiert"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SDK-001": {
+   "status": "pass",
+   "category": "SDK",
+   "severity": "high",
+   "evidence": [
+    "Shared MobilityHTTPClient als Lazy-Singleton fuer shared_mobility/ev_charging (server.py:75-94)"
+   ],
+   "gaps": [
+    "Kein @asynccontextmanager-Lifespan, FastMCP ohne lifespan=",
+    "park_rail/multimodal/geo_admin/traffic_* erzeugen httpx.AsyncClient PRO Call (geo_admin.py:188, multimodal.py:60, etc.) -> kein Connection-Pooling",
+    "Singleton-Client wird nie geschlossen (kein aclose)"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SDK-002": {
+   "status": "pass",
+   "category": "SDK",
+   "severity": "medium",
+   "evidence": [
+    "Pydantic v2 fuer alle Tool-INPUTS (server.py:126+)"
+   ],
+   "gaps": [
+    "Alle 15 Tools haben Return-Type -> str (json.dumps), kein BaseModel/TypedDict-Return",
+    "Kein Output-Schema im tools/list-Manifest",
+    "Kein konsistenter source/provenance/count-Envelope als typisierter Return"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SDK-003": {
+   "status": "pass",
+   "category": "SDK",
+   "severity": "medium",
+   "evidence": [
+    "grep ctx:/Context negativ"
+   ],
+   "gaps": [
+    "Kein Tool nutzt ctx: Context",
+    "Lang laufende Aggregations-Tools (road_mobility_snapshot, road_multimodal_plan) ohne ctx.report_progress()",
+    "Kein ctx.info()/warning() Logging an Client"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SDK-004": {
+   "status": "pass",
+   "category": "SDK",
+   "severity": "high",
+   "evidence": [
+    "dual transport, SSE-Deployment auf Render (render.yaml)"
+   ],
+   "gaps": [
+    "Keine CORSMiddleware konfiguriert (grep negativ)",
+    "expose_headers=Mcp-Session-Id fehlt -> Browser-Clients brechen bei SSE",
+    "allow_origins nicht gesetzt"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-004": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "critical",
+   "evidence": [
+    "Kein Tool fetcht user-kontrollierte URLs - alle Hosts sind hardcoded Konstanten (geo_admin/park_rail/etc.)",
+    "Tool-Inputs sind Koordinaten/Suchtext, keine URLs"
+   ],
+   "gaps": [
+    "Kein HTTPS-Scheme-Enforcement-Layer",
+    "Keine IP-Blocklist (169.254.169.254 etc.)",
+    "follow_redirects=True in allen Clients (api_infrastructure.py:143, etc.) -> Open-Redirect von Upstream koennte interne IP erreichen",
+    "Kein Egress-Proxy"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-005": {
+   "status": "partial",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Keine user-kontrollierten Hostnamen -> Rebinding-Surface minimal"
+   ],
+   "gaps": [
+    "Kein DNS-Pinning (single getaddrinfo + pinned IP)",
+    "follow_redirects=True erhoeht TOCTOU-Surface marginal"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SEC-006": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Default-Transport ist stdio ohne ENV (server.py:1611 default 'stdio')",
+    "SSE nur via explizites MCP_TRANSPORT",
+    "README dokumentiert lokalen stdio-Use-Case (claude_desktop_config.json) und Cloud separat"
+   ],
+   "gaps": []
+  },
+  "SEC-007": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Dockerfile vorhanden (Dockerfile:1)"
+   ],
+   "gaps": [
+    "Kein USER -> Container laeuft als root",
+    "Kein readOnlyRootFilesystem",
+    "Keine capabilities.drop/seccomp",
+    "Kein non-root UID >=10000"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-008": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "medium",
+   "evidence": [
+    "pyproject [project.scripts] sauberer Entry-Point, keine pre/postinstall-Hooks",
+    "README zeigt vollen Installations-Befehl transparent",
+    "publish.yml nutzt OIDC Trusted Publisher (id-token:write, environment pypi, gh-action-pypi-publish)"
+   ],
+   "gaps": [
+    "Keine explizite Sigstore-Verifikations-Anleitung im README"
+   ]
+  },
+  "SEC-009": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "critical",
+   "evidence": [
+    "FastMCP/SSE generiert Session-IDs intern (kryptografisch)",
+    "auth_model=none -> kein User-Konzept, daher kein klassisches Cross-User-Hijacking-Szenario"
+   ],
+   "gaps": [
+    "Keine User-Binding moeglich/implementiert (kein Auth)",
+    "Grundproblem: oeffentlicher SSE-Endpoint auf Render ohne jegliche Authentifizierung",
+    "Keine eigene Session-Validierung/TTL/Invalidierung"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-013": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "API-Key via Plain-Env-Var (server.py:99) - Stufe 1, fuer Public Open Data grundsaetzlich akzeptabel"
+   ],
+   "gaps": [
+    "Keine Dokumentation in docs/secret-management.md die Stufe-1-Wahl begruendet",
+    "Kein Secret-Manager/Rotation-Verfahren"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-014": {
+   "status": "partial",
+   "category": "SEC",
+   "severity": "medium",
+   "evidence": [
+    "Standalone Single-Server, kein Multi-Server-Gateway -> geringe Relevanz"
+   ],
+   "gaps": [
+    "Keine Tool-Allow-List/Gateway-Filterung (fuer kuenftiges Portfolio-Gateway relevant)"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SEC-015": {
+   "status": "partial",
+   "category": "SEC",
+   "severity": "medium",
+   "evidence": [
+    "Eigener vertrauenswuerdiger Server, keine externen MCP-Server eingebunden -> Risiko niedrig (per Check-Definition)"
+   ],
+   "gaps": [
+    "Keine Pre-Flight Tool-Poisoning-Detection (erst bei Gateway-Integration externer Server relevant)"
+   ],
+   "re_audit_note": "Out of scope (multi-server gateway / horizontal scaling / platform). See re-audit-report.md."
+  },
+  "SEC-016": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "critical",
+   "evidence": [
+    "MCP_HOST-Default ist '0.0.0.0' im CODE (server.py:1614)"
+   ],
+   "gaps": [
+    "Code-Default 0.0.0.0 statt 127.0.0.1 -> bei lokalem SSE-Start NeighborJack-Risiko (LAN-Exposition)",
+    "Container-Override gehoert ins Dockerfile/render.yaml (dort bereits gesetzt), nicht als Code-Default"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-018": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Alle Tool-Inputs als Pydantic-Models mit extra='forbid' (server.py:129 etc.)",
+    "Numerische Felder mit ge/le-Constraints (lat/lon/radius/limit)",
+    "String-Felder mit min_length/max_length"
+   ],
+   "gaps": [
+    "Kein strict=True (Pydantic-Coercion aktiv)",
+    "Keine Whitelist-pattern auf Freitext-Feldern (search_text, station_name, destination)"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-019": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "critical",
+   "evidence": [
+    "Trifecta-Score 1/3: keine privaten Daten (nur Public Open Data), keine externe Kommunikation (read-only, kein Write/Send)",
+    "Alle Tools readOnlyHint:True"
+   ],
+   "gaps": [
+    "Keine dokumentierte Trifecta-Bewertung im README/docs (Server ist substanziell sicher, aber undokumentiert)"
+   ]
+  },
+  "SEC-020": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "critical",
+   "evidence": [
+    "Kein os.system/shell=True/eval/exec/os.popen (grep negativ)",
+    "Kein subprocess-Aufruf im Code"
+   ],
+   "gaps": []
+  },
+  "SEC-021": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Ausgehende Hosts sind hardcoded Modul-Konstanten (sharedmobility.ch, geo.admin.ch, data.sbb.ch, opentransportdata.swiss, transport.opendata.ch) -> de-facto eingeschraenkt"
+   ],
+   "gaps": [
+    "Keine zentrale frozenset-Allow-List mit assert_host_allowed-Pre-Request-Check",
+    "Keine Network-Layer-Egress-Policy (Render free-plan ohne NetworkPolicy)",
+    "follow_redirects=True kann Allow-Bereich verlassen"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  },
+  "SEC-022": {
+   "status": "pass",
+   "category": "SEC",
+   "severity": "high",
+   "evidence": [
+    "Konsistenter road_-Prefix auf allen 15 Tools (gewisser Shadowing-Schutz)"
+   ],
+   "gaps": [
+    "Prefix ist generisch (road_), nicht server-identitaet (swiss_road_mobility__)",
+    "Kein Tool-Definition-Hash-Snapshot bei Release",
+    "CHANGELOG verfolgt keine Tool-Definition-Aenderungen"
+   ],
+   "re_audit_note": "Resolved and verified in main."
+  }
+ }
+}
