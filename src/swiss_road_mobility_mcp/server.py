@@ -23,11 +23,11 @@ Phase 3 (3 Tools, kein API-Key nötig):
   - Multimodaler Reiseplan: Auto → Park & Rail → ÖV → Ziel
 """
 
-import json
 import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, ConfigDict, Field
@@ -301,7 +301,7 @@ class ChargerStatusInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def road_find_sharing(params: FindSharingInput) -> str:
+async def road_find_sharing(params: FindSharingInput) -> dict[str, Any]:
     """Find shared mobility vehicles and stations near a location in Switzerland.
 
     Searches for bikes, e-bikes, e-scooters, cars, and other shared
@@ -327,7 +327,7 @@ async def road_find_sharing(params: FindSharingInput) -> str:
             pickup_type=params.pickup_type,
             only_available=params.only_available,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -348,7 +348,7 @@ async def road_find_sharing(params: FindSharingInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_search_sharing(params: SearchSharingInput) -> str:
+async def road_search_sharing(params: SearchSharingInput) -> dict[str, Any]:
     """Search for shared mobility stations by name or address.
 
     Full-text search across all Swiss shared mobility stations.
@@ -366,7 +366,7 @@ async def road_search_sharing(params: SearchSharingInput) -> str:
             provider_id=params.provider_id,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -387,7 +387,7 @@ async def road_search_sharing(params: SearchSharingInput) -> str:
         "openWorldHint": False,
     },
 )
-async def road_sharing_providers() -> str:
+async def road_sharing_providers() -> dict[str, Any]:
     """List all shared mobility providers operating in Switzerland.
 
     Shows which companies offer shared bikes, e-scooters, cars etc.,
@@ -400,7 +400,7 @@ async def road_sharing_providers() -> str:
     """
     try:
         result = await shared_mobility.list_providers(_get_client())
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -421,7 +421,7 @@ async def road_sharing_providers() -> str:
         "openWorldHint": True,
     },
 )
-async def road_find_charger(params: FindChargerInput, ctx: Context) -> str:
+async def road_find_charger(params: FindChargerInput, ctx: Context) -> dict[str, Any]:
     """Find EV charging stations near a location in Switzerland.
 
     Searches ich-tanke-strom.ch data for nearby charging stations
@@ -457,7 +457,7 @@ async def road_find_charger(params: FindChargerInput, ctx: Context) -> str:
             on_progress=_progress,
         )
         await ctx.info(f"Found {result.get('total_found', 0)} charging stations")
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -478,7 +478,7 @@ async def road_find_charger(params: FindChargerInput, ctx: Context) -> str:
         "openWorldHint": True,
     },
 )
-async def road_charger_status(params: ChargerStatusInput) -> str:
+async def road_charger_status(params: ChargerStatusInput) -> dict[str, Any]:
     """Check real-time availability of EV charging stations.
 
     Can check specific stations by ID, or get overall statistics
@@ -496,7 +496,7 @@ async def road_charger_status(params: ChargerStatusInput) -> str:
             client=_get_client(),
             station_ids=params.station_ids if params.station_ids else None,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -517,7 +517,7 @@ async def road_charger_status(params: ChargerStatusInput) -> str:
         "openWorldHint": False,
     },
 )
-async def road_check_status(ctx: Context) -> str:
+async def road_check_status(ctx: Context) -> dict[str, Any]:
     """Check the health of all road mobility data sources.
 
     Tests connectivity to sharedmobility.ch and ich-tanke-strom.ch.
@@ -600,32 +600,28 @@ async def road_check_status(ctx: Context) -> str:
                     "description": info["description"],
                 }
 
-    return json.dumps(
-        {
-            "server": "swiss-road-mobility-mcp",
-            "version": "0.4.0",
-            "phase": "Phase 1 + Phase 2 + Phase 3 (Shared Mobility + E-Charging + DATEX II + Park & Rail + Multimodal)",
-            "api_keys": {
-                "phase_1": "KEINE – alle APIs sind komplett offen!",
-                "phase_2": "OPENTRANSPORTDATA_API_KEY erforderlich (kostenlos: api-manager.opentransportdata.swiss)",
-                "phase_2_configured": bool(os.environ.get("OPENTRANSPORTDATA_API_KEY")),
-                "phase_3": "KEINE – SBB Open Data + transport.opendata.ch sind vollständig offen!",
-            },
-            "endpoints": results,
-            "phase_3_tools": [
-                "road_park_rail: Park+Rail Anlagen via SBB Open Data (kein Key)",
-                "road_mobility_snapshot: Vollständiges Mobilitäts-Lagebild für einen Standort",
-                "road_multimodal_plan: Auto → Park+Rail → ÖV → Ziel (multimodal)",
-            ],
-            "phase_4_tools": [
-                "road_geocode_address: Adresse → GPS via amtl. Gebäudeadressverzeichnis (geo.admin.ch)",
-                "road_reverse_geocode: GPS → amtliche Adresse mit EGID/EGAID (geo.admin.ch)",
-                "road_classify_road: swissTLM3D Strassenklassifikation (geo.admin.ch)",
-            ],
+    return {
+        "server": "swiss-road-mobility-mcp",
+        "version": "0.4.0",
+        "phase": "Phase 1 + Phase 2 + Phase 3 (Shared Mobility + E-Charging + DATEX II + Park & Rail + Multimodal)",
+        "api_keys": {
+            "phase_1": "KEINE – alle APIs sind komplett offen!",
+            "phase_2": "OPENTRANSPORTDATA_API_KEY erforderlich (kostenlos: api-manager.opentransportdata.swiss)",
+            "phase_2_configured": bool(os.environ.get("OPENTRANSPORTDATA_API_KEY")),
+            "phase_3": "KEINE – SBB Open Data + transport.opendata.ch sind vollständig offen!",
         },
-        ensure_ascii=False,
-        indent=2,
-    )
+        "endpoints": results,
+        "phase_3_tools": [
+            "road_park_rail: Park+Rail Anlagen via SBB Open Data (kein Key)",
+            "road_mobility_snapshot: Vollständiges Mobilitäts-Lagebild für einen Standort",
+            "road_multimodal_plan: Auto → Park+Rail → ÖV → Ziel (multimodal)",
+        ],
+        "phase_4_tools": [
+            "road_geocode_address: Adresse → GPS via amtl. Gebäudeadressverzeichnis (geo.admin.ch)",
+            "road_reverse_geocode: GPS → amtliche Adresse mit EGID/EGAID (geo.admin.ch)",
+            "road_classify_road: swissTLM3D Strassenklassifikation (geo.admin.ch)",
+        ],
+    }
 
 
 
@@ -753,7 +749,7 @@ class CounterSitesInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def road_traffic_situations(params: TrafficSituationsInput) -> str:
+async def road_traffic_situations(params: TrafficSituationsInput) -> dict[str, Any]:
     """Get current Swiss traffic events: accidents, roadworks, congestion.
 
     Fetches real-time traffic messages from ASTRA's DATEX II platform.
@@ -788,7 +784,7 @@ async def road_traffic_situations(params: TrafficSituationsInput) -> str:
             active_only=params.active_only,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -809,7 +805,7 @@ async def road_traffic_situations(params: TrafficSituationsInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_traffic_counters(params: TrafficCountersInput) -> str:
+async def road_traffic_counters(params: TrafficCountersInput) -> dict[str, Any]:
     """Get real-time vehicle counts and speeds at Swiss traffic measurement stations.
 
     Finds nearby counting stations and returns live traffic flow data:
@@ -849,13 +845,10 @@ async def road_traffic_counters(params: TrafficCountersInput) -> str:
         sites = await traffic_counters.fetch_measurement_sites(api_key)
 
         if not sites:
-            return json.dumps(
-                {
-                    "error": "Keine Messstellen in der Messstellentabelle gefunden.",
-                    "hint": "Möglicherweise ist der API-Key ungültig oder die API nicht erreichbar.",
-                },
-                ensure_ascii=False,
-            )
+            return {
+                "error": "Keine Messstellen in der Messstellentabelle gefunden.",
+                "hint": "Möglicherweise ist der API-Key ungültig oder die API nicht erreichbar.",
+            }
 
         # 2. Geo-Suche: Nahe Messstellen finden
         nearby = traffic_counters.find_nearby_sites(
@@ -867,22 +860,19 @@ async def road_traffic_counters(params: TrafficCountersInput) -> str:
         )
 
         if not nearby:
-            return json.dumps(
-                {
-                    "search": {
-                        "latitude": params.latitude,
-                        "longitude": params.longitude,
-                        "radius_km": params.radius_km,
-                    },
-                    "found": 0,
-                    "message": (
-                        f"Keine Verkehrszählstellen im Umkreis von {params.radius_km} km gefunden. "
-                        "Tipp: Radius vergrössern oder road_counter_sites für Überblick nutzen."
-                    ),
-                    "total_swiss_stations": len(sites),
+            return {
+                "search": {
+                    "latitude": params.latitude,
+                    "longitude": params.longitude,
+                    "radius_km": params.radius_km,
                 },
-                ensure_ascii=False,
-            )
+                "found": 0,
+                "message": (
+                    f"Keine Verkehrszählstellen im Umkreis von {params.radius_km} km gefunden. "
+                    "Tipp: Radius vergrössern oder road_counter_sites für Überblick nutzen."
+                ),
+                "total_swiss_stations": len(sites),
+            }
 
         # 3. Echtzeit-Messdaten für nahe Stationen holen
         site_ids = [s["id"] for s in nearby]
@@ -901,22 +891,18 @@ async def road_traffic_counters(params: TrafficCountersInput) -> str:
                 })
             enriched.append(combined)
 
-        return json.dumps(
-            {
-                "search": {
-                    "latitude": params.latitude,
-                    "longitude": params.longitude,
-                    "radius_km": params.radius_km,
-                },
-                "found": len(enriched),
-                "stations_with_data": sum(1 for e in enriched if "measurement_time" in e),
-                "total_swiss_stations": len(sites),
-                "data_source": "ASTRA & Kantone via opentransportdata.swiss (DATEX II)",
-                "stations": enriched,
+        return {
+            "search": {
+                "latitude": params.latitude,
+                "longitude": params.longitude,
+                "radius_km": params.radius_km,
             },
-            ensure_ascii=False,
-            indent=2,
-        )
+            "found": len(enriched),
+            "stations_with_data": sum(1 for e in enriched if "measurement_time" in e),
+            "total_swiss_stations": len(sites),
+            "data_source": "ASTRA & Kantone via opentransportdata.swiss (DATEX II)",
+            "stations": enriched,
+        }
 
     except APIError as e:
         return upstream_error(e)
@@ -938,7 +924,7 @@ async def road_traffic_counters(params: TrafficCountersInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_counter_sites(params: CounterSitesInput) -> str:
+async def road_counter_sites(params: CounterSitesInput) -> dict[str, Any]:
     """List Swiss traffic counting stations near a location (without real-time data).
 
     Returns the measurement site metadata (name, coordinates, supplier)
@@ -965,10 +951,7 @@ async def road_counter_sites(params: CounterSitesInput) -> str:
         sites = await traffic_counters.fetch_measurement_sites(api_key)
 
         if not sites:
-            return json.dumps(
-                {"error": "Messstellentabelle ist leer oder API nicht erreichbar."},
-                ensure_ascii=False,
-            )
+            return {"error": "Messstellentabelle ist leer oder API nicht erreichbar."}
 
         nearby = traffic_counters.find_nearby_sites(
             sites=sites,
@@ -978,24 +961,20 @@ async def road_counter_sites(params: CounterSitesInput) -> str:
             limit=params.limit,
         )
 
-        return json.dumps(
-            {
-                "search": {
-                    "latitude": params.latitude,
-                    "longitude": params.longitude,
-                    "radius_km": params.radius_km,
-                },
-                "found": len(nearby),
-                "total_swiss_stations": len(sites),
-                "hint": (
-                    "Nutze road_traffic_counters mit denselben Koordinaten "
-                    "für Echtzeit-Messdaten (Fahrzeuge/h, km/h)."
-                ),
-                "stations": nearby,
+        return {
+            "search": {
+                "latitude": params.latitude,
+                "longitude": params.longitude,
+                "radius_km": params.radius_km,
             },
-            ensure_ascii=False,
-            indent=2,
-        )
+            "found": len(nearby),
+            "total_swiss_stations": len(sites),
+            "hint": (
+                "Nutze road_traffic_counters mit denselben Koordinaten "
+                "für Echtzeit-Messdaten (Fahrzeuge/h, km/h)."
+            ),
+            "stations": nearby,
+        }
 
     except APIError as e:
         return upstream_error(e)
@@ -1167,7 +1146,7 @@ class MultimodalPlanInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def road_park_rail(params: ParkRailNearbyInput) -> str:
+async def road_park_rail(params: ParkRailNearbyInput) -> dict[str, Any]:
     """Find Park & Rail parking facilities near Swiss train stations.
 
     Returns SBB-operated Park & Rail lots with capacity, pricing,
@@ -1193,7 +1172,7 @@ async def road_park_rail(params: ParkRailNearbyInput) -> str:
             radius_km=params.radius_km,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -1214,7 +1193,7 @@ async def road_park_rail(params: ParkRailNearbyInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) -> str:
+async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) -> dict[str, Any]:
     """Get a complete mobility picture for any Swiss location in one call.
 
     Aggregates in parallel:
@@ -1259,7 +1238,7 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) ->
             api_key=api_key,
         )
         await ctx.report_progress(progress=1.0, total=1.0, message="Snapshot complete")
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -1280,7 +1259,7 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) ->
         "openWorldHint": True,
     },
 )
-async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> str:
+async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> dict[str, Any]:
     """Plan a multimodal trip: Drive → Park & Rail → Train → Destination.
 
     The «Holy Grail» of Phase 3: combines all data sources into a
@@ -1326,7 +1305,7 @@ async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> str
             park_rail_radius_km=params.park_rail_radius_km,
         )
         await ctx.report_progress(progress=1.0, total=1.0, message="Trip plan ready")
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except APIError as e:
         return upstream_error(e)
     except Exception:
@@ -1448,7 +1427,7 @@ class ClassifyRoadInput(BaseModel):
         "openWorldHint": True,
     },
 )
-async def road_geocode_address(params: GeocodeAddressInput) -> str:
+async def road_geocode_address(params: GeocodeAddressInput) -> dict[str, Any]:
     """Convert a Swiss address to GPS coordinates using the official federal address registry.
 
     Uses swisstopo's amtliches Gebäudeadressverzeichnis (GWR-based) –
@@ -1477,7 +1456,7 @@ async def road_geocode_address(params: GeocodeAddressInput) -> str:
             search_text=params.search_text,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except Exception:
         return unexpected_error("road_geocode_address")
 
@@ -1496,7 +1475,7 @@ async def road_geocode_address(params: GeocodeAddressInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_reverse_geocode(params: ReverseGeocodeInput) -> str:
+async def road_reverse_geocode(params: ReverseGeocodeInput) -> dict[str, Any]:
     """Find the nearest official Swiss addresses for given GPS coordinates.
 
     Uses the federal building address register (amtliches Gebäudeadressverzeichnis)
@@ -1524,7 +1503,7 @@ async def road_reverse_geocode(params: ReverseGeocodeInput) -> str:
             longitude=params.longitude,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except Exception:
         return unexpected_error("road_reverse_geocode")
 
@@ -1543,7 +1522,7 @@ async def road_reverse_geocode(params: ReverseGeocodeInput) -> str:
         "openWorldHint": True,
     },
 )
-async def road_classify_road(params: ClassifyRoadInput) -> str:
+async def road_classify_road(params: ClassifyRoadInput) -> dict[str, Any]:
     """Classify roads at a location using the official Swiss topographic road network (swissTLM3D).
 
     The swissTLM3D is the authoritative federal road network dataset from swisstopo.
@@ -1585,7 +1564,7 @@ async def road_classify_road(params: ClassifyRoadInput) -> str:
             tolerance=params.tolerance,
             limit=params.limit,
         )
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return result
     except Exception:
         return unexpected_error("road_classify_road")
 

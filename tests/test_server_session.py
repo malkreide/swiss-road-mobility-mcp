@@ -42,6 +42,10 @@ async def test_find_charger_tool_via_session():
         )
 
     assert result.isError is False
+    # SDK-002: structured output is delivered alongside the JSON text.
+    assert result.structuredContent is not None
+    assert result.structuredContent["total_found"] >= 1
+    # Backward-compatible text rendering is still present.
     data = json.loads(result.content[0].text)
     assert data["total_found"] >= 1
     assert data["stations"][0]["status"] == "Available"

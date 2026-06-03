@@ -26,18 +26,20 @@ from swiss_road_mobility_mcp.logging_config import JsonFormatter, configure_logg
 # ===========================================================================
 
 class TestErrorEnvelope:
+    # SDK-002: the error helpers now return dicts (structured content), not
+    # JSON strings.
     def test_envelope_shape(self):
-        data = json.loads(error_envelope(CODE_UPSTREAM, "boom"))
+        data = error_envelope(CODE_UPSTREAM, "boom")
         assert data["isError"] is True
         assert data["error"] == {"code": CODE_UPSTREAM, "message": "boom"}
 
     def test_upstream_error_preserves_curated_message(self):
-        data = json.loads(upstream_error(APIError("Datenquelle nicht erreichbar.")))
+        data = upstream_error(APIError("Datenquelle nicht erreichbar."))
         assert data["error"]["code"] == CODE_UPSTREAM
         assert data["error"]["message"] == "Datenquelle nicht erreichbar."
 
     def test_upstream_error_detects_rate_limit(self):
-        data = json.loads(upstream_error(APIError("Rate Limit für 'x' erreicht.")))
+        data = upstream_error(APIError("Rate Limit für 'x' erreicht."))
         assert data["error"]["code"] == CODE_RATE_LIMIT
 
 
@@ -51,13 +53,12 @@ class TestMasking:
         try:
             raise ValueError("SECRET internal detail 0xCAFE")
         except Exception:
-            out = unexpected_error("road_demo")
-        data = json.loads(out)
+            data = unexpected_error("road_demo")
         assert data["isError"] is True
         assert data["error"]["code"] == CODE_EXECUTION
         # The raw exception text must NOT reach the client.
-        assert "SECRET" not in out
-        assert "0xCAFE" not in out
+        assert "SECRET" not in data["error"]["message"]
+        assert "0xCAFE" not in data["error"]["message"]
         # But it IS logged server-side (with the tool context + traceback).
         assert any("road_demo" in r.getMessage() for r in caplog.records)
         assert any(r.exc_info for r in caplog.records)
