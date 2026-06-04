@@ -1,6 +1,6 @@
-> **Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide)**
+> 🇨🇭 **Part of the [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)**
 
-# Swiss Road & Mobility MCP Server
+# 🚗 Swiss Road & Mobility MCP Server
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +10,7 @@
 
 > MCP Server for Swiss road mobility — shared vehicles, EV charging, traffic alerts, Park & Rail, and multimodal trip planning
 
-[Deutsche Version](README.de.md)
+[🇩🇪 Deutsche Version](README.de.md)
 
 ---
 
@@ -301,7 +301,10 @@ swiss-road-mobility-mcp/
 ├── .github/workflows/ci.yml     # GitHub Actions (Python 3.11/3.12/3.13)
 ├── pyproject.toml
 ├── CHANGELOG.md
-├── CONTRIBUTING.md
+├── CONTRIBUTING.md               # Contribution guide (English)
+├── CONTRIBUTING.de.md            # Contribution guide (German)
+├── SECURITY.md                   # Security policy (English)
+├── SECURITY.de.md                # Security policy (German)
 ├── LICENSE
 ├── README.md                    # This file (English)
 └── README.de.md                 # German version
@@ -354,6 +357,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
+## Security
+
+See [SECURITY.md](SECURITY.md) for the security posture and vulnerability reporting.
+
+---
+
 ## License
 
 MIT License — see [LICENSE](LICENSE)
@@ -376,4 +385,4 @@ Hayal Oezkan · [malkreide](https://github.com/malkreide)
 - **Protocol:** [Model Context Protocol](https://modelcontextprotocol.io/) — Anthropic / Linux Foundation
 - **Related:** [swiss-transport-mcp](https://github.com/malkreide/swiss-transport-mcp) — Public transport (trains, buses, trams)
 - **Related:** [zurich-opendata-mcp](https://github.com/malkreide/zurich-opendata-mcp) — 900+ datasets from the City of Zurich
-- **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide)
+- **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)
