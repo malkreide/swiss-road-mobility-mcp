@@ -1,8 +1,6 @@
-[English Version](README.md)
+> 🇨🇭 **Teil des [Swiss Public Data MCP Portfolios](https://github.com/malkreide/swiss-public-data-mcp)**
 
-> **Teil des [Swiss Public Data MCP Portfolios](https://github.com/malkreide)**
-
-# Swiss Road & Mobility MCP Server
+# 🚗 Swiss Road & Mobility MCP Server
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,6 +9,8 @@
 ![CI](https://github.com/malkreide/swiss-road-mobility-mcp/actions/workflows/ci.yml/badge.svg)
 
 > MCP-Server für Schweizer Strassenmobilität — Sharing-Fahrzeuge, E-Ladestationen, Verkehrsmeldungen, Park & Rail und multimodale Reiseplanung
+
+[🇬🇧 English Version](README.md)
 
 ---
 
@@ -272,7 +272,10 @@ swiss-road-mobility-mcp/
 ├── .github/workflows/ci.yml     # GitHub Actions (Python 3.11/3.12/3.13)
 ├── pyproject.toml
 ├── CHANGELOG.md
-├── CONTRIBUTING.md
+├── CONTRIBUTING.md               # Mitwirken (Englisch)
+├── CONTRIBUTING.de.md            # Mitwirken (Deutsch)
+├── SECURITY.md                   # Sicherheitsrichtlinie (Englisch)
+├── SECURITY.de.md                # Sicherheitsrichtlinie (Deutsch)
 ├── LICENSE
 ├── README.md                    # Englische Hauptversion
 └── README.de.md                 # Diese Datei (Deutsch)
@@ -325,6 +328,12 @@ Siehe [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
+## Sicherheit
+
+Siehe [SECURITY.md](SECURITY.md) für die Sicherheitslage und das Melden von Schwachstellen.
+
+---
+
 ## Lizenz
 
 MIT-Lizenz — siehe [LICENSE](LICENSE)
@@ -347,4 +356,4 @@ Hayal Oezkan · [malkreide](https://github.com/malkreide)
 - **Protokoll:** [Model Context Protocol](https://modelcontextprotocol.io/) — Anthropic / Linux Foundation
 - **Verwandt:** [swiss-transport-mcp](https://github.com/malkreide/swiss-transport-mcp) — ÖV-Server (Züge, Busse, Trams)
 - **Verwandt:** [zurich-opendata-mcp](https://github.com/malkreide/zurich-opendata-mcp) — 900+ Datensätze der Stadt Zürich
-- **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide)
+- **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)
