@@ -628,7 +628,7 @@ async def road_check_status(ctx: Context) -> dict[str, Any]:
         },
         "endpoints": results,
         "phase_3_tools": [
-            "road_park_rail: Park+Rail Anlagen via SBB Open Data (kein Key)",
+            "road_park_rail: Park+Rail Anlagen via opentransportdata.swiss (kein Key)",
             "road_mobility_snapshot: Vollständiges Mobilitäts-Lagebild für einen Standort",
             "road_multimodal_plan: Auto → Park+Rail → ÖV → Ziel (multimodal)",
         ],
@@ -1165,21 +1165,19 @@ class MultimodalPlanInput(BaseModel):
 async def road_park_rail(params: ParkRailNearbyInput) -> dict[str, Any]:
     """Find Park & Rail parking facilities near Swiss train stations.
 
-    Returns SBB-operated Park & Rail lots with capacity, pricing,
-    and opening hours. Data from SBB Open Data Portal.
+    Returns SBB-operated Park & Rail lots with capacity and location.
 
     Phase 3 tool – the link between road and rail:
     «Park here, then take the train.»
 
-    No API key required – completely open SBB data!
+    No API key required – completely open data!
 
-    Data source: SBB Open Data Portal (data.sbb.ch).
-    Cache TTL: 5 minutes.
+    Data source: Open-Data-Plattform Mobilität Schweiz
+    (opentransportdata.swiss, Park+Rail GeoJSON). Cache TTL: 5 minutes.
 
     Returns:
         JSON with nearby Park & Rail facilities sorted by distance,
-        including total spaces, tarif category, opening hours,
-        and optional real-time occupancy if available.
+        including total spaces and capacity by category.
     """
     try:
         result = await park_rail.find_nearby_park_rail(

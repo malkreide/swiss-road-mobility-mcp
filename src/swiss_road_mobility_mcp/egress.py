@@ -46,8 +46,10 @@ ALLOWED_HOSTS: frozenset[str] = frozenset({
     "api3.geo.admin.ch",              # geocoding / road classification
     "data.sbb.ch",                    # SBB Park & Rail open data
     "transport.opendata.ch",          # public-transport journey planner
-    "api.opentransportdata.swiss",    # DATEX II traffic (Phase 2)
+    "api.opentransportdata.swiss",    # DATEX II traffic + CKAN API (Phase 2/3)
     "api-manager.opentransportdata.swiss",
+    "opentransportdata.swiss",         # Park & Rail GeoJSON resource downloads
+    "data.opentransportdata.swiss",    # CKAN portal / resource downloads
 })
 
 
