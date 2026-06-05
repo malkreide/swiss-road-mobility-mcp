@@ -6,18 +6,27 @@ Metapher: Phase 1 zeigt das Velo an der Ecke.
           Phase 3 zeigt, wo du dein Auto parkierst und in den Zug steigst.
           Zusammen: das vollständige multimodale Bild der Schweizer Mobilität.
 
-Datenquelle: SBB Open Data Portal (data.sbb.ch / Opendatasoft API)
-Format: JSON (REST, kein SOAP, kein XML!)
-API-Key: KEINER – komplett offen! (Phase-1-Philosophie beibehalten)
-Update: Kapazitäten täglich; Belegung wo vorhanden in Echtzeit
+Datenquelle: Open-Data-Plattform Mobilität Schweiz (opentransportdata.swiss).
+Format: GeoJSON (FeatureCollection) – KEINE Opendatasoft-/data.sbb.ch-API!
+API-Key: KEINER – komplett offen (Phase-1-Philosophie beibehalten).
+Update: täglich aus der SBB-Datenbank P+Rail.
 
-API-Endpunkt (v0.4.0):
-  https://data.sbb.ch/api/explore/v2.1/catalog/datasets/station-mobility/records
-  Das frühere Dataset 'park-and-rail' wurde von SBB entfernt (→ HTTP 404).
-  Ersatz: 'station-mobility' enthält Park+Rail-Daten unter den Feldern
-  parkrail_anzahl, parkrail_preis_tag, parkrail_preis_monat usw.
-  Geofilter (ODSQL v2):
-    ?where=parkrail_anzahl>0 AND distance(geopos,geom'POINT(lon lat)',{r}km)
+Warum nicht data.sbb.ch?
+  Die Opendatasoft-API auf data.sbb.ch liefert die Park+Rail-Anlagen NICHT
+  (alle Datensatz-/Endpunkt-Varianten antworten mit HTTP 404). Die offizielle
+  Quelle ist ein statisches GeoJSON, das via CKAN auf opentransportdata.swiss
+  publiziert wird.
+
+Abruf-Strategie:
+  1. CKAN-API (api.opentransportdata.swiss) befragen, um die aktuelle
+     Download-URL der GeoJSON-Resource zu ermitteln (keine fragile
+     Hardcoded-Resource-UUID).
+  2. GeoJSON laden, FeatureCollection parsen.
+  Neuer konsolidierter Datensatz ('bike-and-car-parking') zuerst, der ältere
+  'parking-facilities' (Abschaltung 2026-06-30) als Fallback.
+  Schlägt alles fehl, liefern die Funktionen ein strukturiertes
+  „nicht erreichbar“-Resultat statt einer Exception (Graceful Degradation),
+  damit das MCP-Tool nie hart abstürzt.
 """
 
 import logging
@@ -27,7 +36,7 @@ import httpx
 
 from . import USER_AGENT
 from .api_infrastructure import APIError, haversine_km
-from .egress import async_client
+from .egress import EgressBlockedError, async_client
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
@@ -35,266 +44,229 @@ logger = logging.getLogger("swiss-road-mobility-mcp")
 # Konstanten
 # ---------------------------------------------------------------------------
 
-# SBB Open Data hat den Park+Rail-Datensatz mehrfach umbenannt; die
-# Park+Rail-Felder (parkrail_anzahl, parkrail_preis_tag, geopos …) stecken
-# heute in den Datensätzen 'mobilitat' bzw. 'station-mobility'.
-#
-# Wir kennen NICHT garantiert, welche API-Version (Explore v2.1 oder die
-# Legacy Records-API v1) auf data.sbb.ch je Datensatz aktiv ist – und welche
-# Geofilter-Syntax akzeptiert wird. Frühere Versionen mischten v1-Parameter
-# (geofilter.distance) mit dem v2.1-Pfad, was HTTP 404/400 auslöste.
-# Darum probieren wir pro Datensatz BEIDE API-Stile durch und nehmen die
-# erste 2xx-Antwort. _format_facility versteht beide Response-Formen
-# (v2.1: flache Felder; v1: verschachtelt unter "fields").
-_PARK_RAIL_DATASETS = ["mobilitat", "station-mobility", "park-and-rail"]
+# CKAN-API der Open-Data-Plattform Mobilität Schweiz (kein API-Key nötig).
+_CKAN_PACKAGE_SHOW = "https://api.opentransportdata.swiss/ckan-api/package_show"
 
-# Explore API v2.1 – Datensatz-Records (flache Felder, geopos als geo_point).
-_V21_RECORDS = "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/{ds}/records"
-# Legacy Records API v1 – unterstützt nativ geofilter.distance (lat,lon,Meter).
-_V1_SEARCH = "https://data.sbb.ch/api/records/1.0/search/"
+# Reihenfolge: neuer konsolidierter Datensatz zuerst, alter als Fallback.
+_PARK_RAIL_DATASETS = ["bike-and-car-parking", "parking-facilities"]
 
-# Primärer Endpunkt (für die Textsuche / Backwards-Kompatibilität).
-PARK_RAIL_URL = _V21_RECORDS.format(ds="mobilitat")
+_DATA_SOURCE = "Park+Rail GeoJSON (opentransportdata.swiss) – kein API-Key nötig"
 
 _CACHE_TTL = 300.0  # 5 Minuten (Kapazitätsdaten ändern sich selten)
-_cache: dict = {}
-_cache_ts: float = 0.0
+# Wir cachen die komplette Feature-Liste (das GeoJSON ist mehrere MB groß –
+# einmal laden, dann clientseitig nach Position/Name filtern).
+_features_cache: list[dict] | None = None
+_features_cache_ts: float = 0.0
 
 
 # ---------------------------------------------------------------------------
 # Daten-Formatierung
 # ---------------------------------------------------------------------------
 
-def _format_facility(record: dict, lat_center: float, lon_center: float) -> dict | None:
+def _format_feature(
+    feature: dict,
+    lat_center: float | None = None,
+    lon_center: float | None = None,
+) -> dict | None:
+    """Wandelt ein GeoJSON-Feature in ein sauberes, LLM-freundliches dict um.
+
+    Erwartete Struktur (Park+Rail GeoJSON):
+        {
+          "type": "Feature",
+          "geometry": {"type": "Point", "coordinates": [lon, lat]},
+          "properties": {
+            "displayName": "Horgen",
+            "operator": "SBB",
+            "bookingSystem": {"type": "...", "id": "..."},
+            "address": {"addressLine": "...", "city": "...", "postalCode": "..."},
+            "capacities": [{"categoryType": "STANDARD", "total": 44}, ...]
+          }
+        }
+
+    ``distance_km`` wird nur gesetzt, wenn ein Suchzentrum übergeben wird.
     """
-    Wandelt einen rohen SBB-Open-Data-Datensatz (station-mobility) in ein
-    sauberes, LLM-freundliches Format um.
-
-    Metapher: Wie ein Concierge, der aus einem technischen Parkplatz-
-    Datenblatt eine nützliche Reisebeschreibung macht.
-
-    Feldmapping (station-mobility):
-      geopos → Koordinaten (lon/lat)
-      stationsbezeichnung → Name/Bahnhof
-      parkrail_anzahl → Anzahl Parkplätze
-      parkrail_preis_tag / _monat / _jahr → Preise CHF
-      parkrail_pflichtig_zeit1/2/3 → Öffnungszeiten
-      parkrail_app / _webshop / _lokal / _automat → Buchungskanäle
-    """
-    # station-mobility liefert die Felder flach (kein verschachteltes 'fields')
-    fields = record.get("fields", {}) or record
-
-    # ── Koordinaten ────────────────────────────────────────────────────────
-    # station-mobility: geopos = {"lon": ..., "lat": ...}
-    geo = fields.get("geopos") or fields.get("geo_point_2d") or {}
-    if isinstance(geo, dict):
-        lat = geo.get("lat") or geo.get("latitude")
-        lon = geo.get("lon") or geo.get("longitude")
-    elif isinstance(geo, list) and len(geo) == 2:
-        lat, lon = geo[0], geo[1]
-    else:
-        lat, lon = None, None
-
-    if lat is None or lon is None:
+    if not isinstance(feature, dict):
         return None
 
-    distance_km = haversine_km(lat_center, lon_center, float(lat), float(lon))
+    geom = feature.get("geometry") or {}
+    coords = geom.get("coordinates") or []
+    # GeoJSON-Reihenfolge ist [lon, lat]
+    if not (isinstance(coords, list) and len(coords) >= 2):
+        return None
+    try:
+        lon = float(coords[0])
+        lat = float(coords[1])
+    except (TypeError, ValueError):
+        return None
 
-    # ── Kapazität ──────────────────────────────────────────────────────────
-    # station-mobility: parkrail_anzahl (float, z.B. 58.0)
-    total = (
-        fields.get("parkrail_anzahl")
-        or fields.get("anzahl_pp_total")
-        or fields.get("total_pp")
-        or 0
-    )
-    free = fields.get("anzahl_pp_frei") or fields.get("free_pp") or None
+    props = feature.get("properties") or {}
 
-    # ── Preise ─────────────────────────────────────────────────────────────
-    price_day = fields.get("parkrail_preis_tag")
-    price_month = fields.get("parkrail_preis_monat")
-    price_year = fields.get("parkrail_preis_jahr")
-
-    # ── Öffnungszeiten ─────────────────────────────────────────────────────
-    # station-mobility: parkrail_pflichtig_zeit1/2/3
-    opening_parts = [
-        fields.get("parkrail_pflichtig_zeit1"),
-        fields.get("parkrail_pflichtig_zeit2"),
-        fields.get("parkrail_pflichtig_zeit3"),
-    ]
-    opening_parts = [p for p in opening_parts if p]
-    opening = (
-        " / ".join(opening_parts)
-        or fields.get("oeffnungszeiten")
-        or fields.get("opening_hours")
-        or "nicht angegeben"
-    )
-
-    # ── Name / Bahnhof ─────────────────────────────────────────────────────
-    # station-mobility: stationsbezeichnung
     name = (
-        fields.get("stationsbezeichnung")
-        or fields.get("bezeichnung")
-        or fields.get("name")
-        or fields.get("bahnhof")
+        props.get("displayName")
+        or props.get("name")
+        or props.get("label")
         or "Unbekannt"
     )
-    station = name  # In station-mobility ist Name = Bahnhof
+
+    # ── Kapazität ──────────────────────────────────────────────────────────
+    # capacities[] kann mehrere Kategorien (STANDARD, DISABLED, …) enthalten.
+    total = 0
+    by_category: dict[str, int] = {}
+    capacities = props.get("capacities") or []
+    if isinstance(capacities, list):
+        for cap in capacities:
+            if not isinstance(cap, dict):
+                continue
+            value = cap.get("total")
+            if isinstance(value, (int, float)):
+                category = str(cap.get("categoryType") or "UNKNOWN")
+                total += int(value)
+                by_category[category] = by_category.get(category, 0) + int(value)
 
     result: dict = {
         "name": str(name),
-        "station": str(station),
-        "latitude": float(lat),
-        "longitude": float(lon),
-        "distance_km": round(distance_km, 3),
-        "total_spaces": int(float(total)) if total else 0,
-        "opening_hours": str(opening),
-        "data_source": "SBB Open Data – station-mobility (data.sbb.ch)",
+        "station": str(name),
+        "latitude": lat,
+        "longitude": lon,
+        "total_spaces": int(total),
+        "data_source": _DATA_SOURCE,
     }
 
-    # Preise als strukturiertes Objekt
-    if any(p is not None for p in [price_day, price_month, price_year]):
-        result["price_chf"] = {
-            k: float(v)
-            for k, v in [
-                ("day", price_day),
-                ("month", price_month),
-                ("year", price_year),
-            ]
-            if v is not None
-        }
+    if lat_center is not None and lon_center is not None:
+        result["distance_km"] = round(haversine_km(lat_center, lon_center, lat, lon), 3)
 
-    # Buchungskanäle
-    booking_channels = []
-    if fields.get("parkrail_app"):
-        booking_channels.append("App")
-    if fields.get("parkrail_webshop"):
-        booking_channels.append("Webshop")
-    if fields.get("parkrail_lokal"):
-        booking_channels.append("Vor Ort")
-    if fields.get("parkrail_automat"):
-        booking_channels.append("Automat")
-    if booking_channels:
-        result["booking_channels"] = booking_channels
+    if by_category:
+        result["spaces_by_category"] = by_category
 
-    # Hinweis/Bemerkung
-    remark = fields.get("parkrail_bemerkung")
-    if remark:
-        result["remark"] = str(remark)
+    operator = props.get("operator")
+    if operator:
+        result["operator"] = str(operator)
 
-    # Optionale Felder nur wenn vorhanden
-    if free is not None:
-        result["free_spaces"] = int(free)
-        result["occupancy_pct"] = (
-            round((1 - int(float(free)) / int(float(total))) * 100, 1)
-            if float(total) > 0
-            else None
-        )
+    address = props.get("address")
+    if isinstance(address, dict):
+        parts = [address.get("addressLine"), address.get("postalCode"), address.get("city")]
+        joined = ", ".join(str(p) for p in parts if p)
+        if joined:
+            result["address"] = joined
 
-    for optional_key, field_name in [
-        ("bike_parking", "veloabstellplaetze"),
-    ]:
-        val = fields.get(field_name)
-        if val is not None:
-            result[optional_key] = val
+    booking = props.get("bookingSystem")
+    if isinstance(booking, dict) and booking.get("type"):
+        result["booking_system"] = str(booking.get("type"))
 
     return result
 
 
 # ---------------------------------------------------------------------------
-# Netzwerk-Helfer
+# Netzwerk: GeoJSON via CKAN beschaffen (mit Cache)
 # ---------------------------------------------------------------------------
 
-async def _fetch_records(attempts: list[tuple[str, dict]]) -> list[dict]:
-    """Probiert eine Liste von (URL, params)-Versuchen durch.
+async def _discover_geojson_url(client: httpx.AsyncClient, dataset_id: str) -> str | None:
+    """Ermittelt die Download-URL der (Geo)JSON-Resource eines CKAN-Datensatzes."""
+    response = await client.get(_CKAN_PACKAGE_SHOW, params={"id": dataset_id})
+    response.raise_for_status()
+    payload = response.json()
+    result = payload.get("result") or {}
+    # CKAN: "resources"; manche Spiegel verwenden "ressources".
+    resources = result.get("resources") or result.get("ressources") or []
+    if not isinstance(resources, list):
+        return None
 
-    Gibt die rohen Records der ersten 2xx-Antwort zurück (auch wenn leer –
-    ein leeres, aber gültiges Resultat ist Erfolg). HTTP 400/404 und
-    Netzwerkfehler führen zum nächsten Versuch. Erst wenn ALLE Versuche
-    scheitern, wird ein APIError geworfen.
-    """
+    # GeoJSON bevorzugen, sonst JSON.
+    for preferred in ("geojson", "json"):
+        for res in resources:
+            if not isinstance(res, dict):
+                continue
+            fmt = str(res.get("format") or "").lower()
+            url = res.get("url") or res.get("download_url")
+            if url and preferred in fmt:
+                return str(url)
+
+    # Fallback: erste Resource, deren URL auf .json/.geojson endet.
+    for res in resources:
+        if not isinstance(res, dict):
+            continue
+        url = str(res.get("url") or "")
+        if url.endswith((".json", ".geojson")):
+            return url
+
+    return None
+
+
+async def _fetch_park_rail_features() -> list[dict]:
+    """Lädt die Park+Rail-GeoJSON-Features. Wirft APIError, wenn alles scheitert."""
     last_error = ""
     async with async_client(
-        timeout=15.0,
+        timeout=30.0,  # die Datei ist mehrere MB groß
         follow_redirects=True,
         headers={
             "User-Agent": USER_AGENT,
-            "Accept": "application/json",
+            "Accept": "application/json, application/geo+json",
         },
     ) as client:
-        for url, params in attempts:
+        for dataset_id in _PARK_RAIL_DATASETS:
             try:
-                response = await client.get(url, params=params)
-                # 404 = Datensatz/Pfad unbekannt, 400 = Query-Feld passt nicht
-                # zu diesem Datensatz/dieser API-Version → nächster Versuch.
-                if response.status_code in (400, 404):
-                    logger.warning(
-                        "Park+Rail: %s liefert HTTP %s – nächster Kandidat wird versucht.",
-                        url, response.status_code,
-                    )
-                    last_error = f"HTTP {response.status_code} bei {url}"
+                url = await _discover_geojson_url(client, dataset_id)
+                if not url:
+                    last_error = f"Keine (Geo)JSON-Resource im Datensatz '{dataset_id}'"
+                    logger.warning("Park+Rail: %s", last_error)
                     continue
+
+                response = await client.get(url)
                 response.raise_for_status()
                 data = response.json()
-                # v2.1: results[]; v1: records[]
-                return data.get("results") or data.get("records") or []
+
+                # FeatureCollection → features[]; manche Feeds liefern direkt eine Liste.
+                if isinstance(data, dict):
+                    features = data.get("features")
+                elif isinstance(data, list):
+                    features = data
+                else:
+                    features = None
+
+                if features:
+                    logger.debug("Park+Rail: %d Features aus '%s'", len(features), dataset_id)
+                    return features
+
+                last_error = f"Datensatz '{dataset_id}' enthielt keine Features"
+                logger.warning("Park+Rail: %s", last_error)
             except httpx.HTTPStatusError as e:
                 # OBS-002: rohen Upstream-Body nur server-seitig loggen.
                 logger.warning(
-                    "Park+Rail: HTTP %s bei %s: %s",
-                    e.response.status_code, url, e.response.text[:200],
+                    "Park+Rail: HTTP %s bei Datensatz '%s': %s",
+                    e.response.status_code, dataset_id, e.response.text[:200],
                 )
-                last_error = f"HTTP {e.response.status_code} bei {url}"
-            except httpx.TimeoutException:
-                last_error = f"Timeout (15s) bei {url}"
+                last_error = f"HTTP {e.response.status_code} bei Datensatz '{dataset_id}'"
+            except (httpx.TimeoutException, httpx.ConnectError) as e:
+                last_error = f"Verbindungsfehler bei Datensatz '{dataset_id}': {e}"
                 logger.warning("Park+Rail: %s", last_error)
-            except httpx.ConnectError as e:
-                last_error = f"Verbindungsfehler bei {url}: {e}"
+            except EgressBlockedError as e:
+                last_error = f"Egress blockiert für Datensatz '{dataset_id}': {e}"
+                logger.warning("Park+Rail: %s", last_error)
+            except ValueError as e:
+                # JSON-Decode-Fehler
+                last_error = f"Ungültiges JSON bei Datensatz '{dataset_id}': {e}"
                 logger.warning("Park+Rail: %s", last_error)
 
     raise APIError(
-        f"Alle SBB Park+Rail-Endpunkte nicht erreichbar. "
+        f"Park+Rail-Daten (opentransportdata.swiss) nicht erreichbar. "
         f"Letzter Fehler: {last_error}. "
-        "Bitte prüfe https://data.sbb.ch für den aktuellen Datensatz-Namen "
-        "oder nutze opendata.swiss als Alternative."
+        "Bitte prüfe https://opentransportdata.swiss für den aktuellen Datensatz."
     )
 
 
-def _geo_search_attempts(
-    latitude: float, longitude: float, radius_km: float, limit: int
-) -> list[tuple[str, dict]]:
-    """Baut die (URL, params)-Versuche für eine Umkreissuche.
+async def _get_features() -> list[dict]:
+    """Liefert die Features aus dem Cache oder lädt sie neu."""
+    global _features_cache, _features_cache_ts
 
-    Pro Datensatz zwei Stile:
-      1. Explore API v2.1 – Geofilter via ``within_distance()`` in ``where``.
-      2. Legacy Records API v1 – nativer ``geofilter.distance`` (lat,lon,Meter).
-    """
-    radius_m = int(radius_km * 1000)
-    rows = min(limit * 2, 100)  # mehr holen, dann clientseitig filtern/sortieren
-    attempts: list[tuple[str, dict]] = []
-    for ds in _PARK_RAIL_DATASETS:
-        attempts.append((
-            _V21_RECORDS.format(ds=ds),
-            {
-                # WKT-Reihenfolge: POINT(lon lat)
-                "where": (
-                    f"within_distance(geopos, geom'POINT({longitude} {latitude})', "
-                    f"{radius_km}km)"
-                ),
-                "limit": rows,
-                "offset": 0,
-                "timezone": "Europe/Zurich",
-            },
-        ))
-        attempts.append((
-            _V1_SEARCH,
-            {
-                "dataset": ds,
-                "geofilter.distance": f"{latitude},{longitude},{radius_m}",
-                "rows": rows,
-            },
-        ))
-    return attempts
+    now = time.monotonic()
+    if _features_cache is not None and (now - _features_cache_ts) < _CACHE_TTL:
+        logger.debug("Cache HIT: park_rail features")
+        return _features_cache
+
+    features = await _fetch_park_rail_features()
+    _features_cache = features
+    _features_cache_ts = now
+    return features
 
 
 # ---------------------------------------------------------------------------
@@ -310,8 +282,12 @@ async def find_nearby_park_rail(
     """
     Findet Park & Rail Anlagen in der Nähe einer Position.
 
-    Nutzt den SBB Open Data Geofilter für Umkreissuche.
-    Resultate sind nach Distanz sortiert.
+    Lädt das offizielle Park+Rail-GeoJSON und filtert clientseitig per
+    Haversine-Distanz. Resultate sind nach Distanz sortiert.
+
+    Bei nicht erreichbarer Datenquelle wird ein strukturiertes Resultat mit
+    ``found: 0`` und einem ``note``/``error``-Hinweis zurückgegeben – KEINE
+    Exception (Graceful Degradation).
 
     Args:
         latitude: Breitengrad des Suchzentrums
@@ -322,54 +298,39 @@ async def find_nearby_park_rail(
     Returns:
         dict mit facilities-Liste, sortiert nach Distanz
     """
-    global _cache, _cache_ts
+    search = {"latitude": latitude, "longitude": longitude, "radius_km": radius_km}
 
-    # ── Cache-Prüfung ──────────────────────────────────────────────────────
-    cache_key = f"{latitude:.4f}_{longitude:.4f}_{radius_km}_{limit}"
-    now = time.monotonic()
-    if _cache and (now - _cache_ts) < _CACHE_TTL:
-        if cache_key in _cache:
-            logger.debug("Cache HIT: park_rail")
-            return _cache[cache_key]
-
-    # ── SBB Open Data API-Abfrage ──────────────────────────────────────────
-    # Probiert v2.1- und v1-Stil über alle bekannten Datensätze durch und
-    # liefert die Records der ersten erfolgreichen Antwort.
-    raw_records = await _fetch_records(
-        _geo_search_attempts(latitude, longitude, radius_km, limit)
-    )
+    try:
+        features = await _get_features()
+    except APIError as e:
+        return {
+            "search": search,
+            "found": 0,
+            "api_key_required": False,
+            "data_source": _DATA_SOURCE,
+            "facilities": [],
+            "note": "Park+Rail-Datenquelle momentan nicht erreichbar.",
+            "error": str(e),
+        }
 
     facilities = []
-    for rec in raw_records:
-        # v2: direkt die Felder; v1: unter "fields"
-        formatted = _format_facility(rec, latitude, longitude)
+    for feature in features:
+        formatted = _format_feature(feature, latitude, longitude)
         if formatted is None:
             continue
-        # Distanz-Filter als Sicherheitsnetz (API-Geofilter kann ungenau sein)
         if formatted["distance_km"] <= radius_km:
             facilities.append(formatted)
 
-    # Nach Distanz sortieren
     facilities.sort(key=lambda x: x["distance_km"])
     facilities = facilities[:limit]
 
-    result = {
-        "search": {
-            "latitude": latitude,
-            "longitude": longitude,
-            "radius_km": radius_km,
-        },
+    return {
+        "search": search,
         "found": len(facilities),
         "api_key_required": False,
-        "data_source": "SBB Open Data Portal (data.sbb.ch) – kein API-Key nötig",
+        "data_source": _DATA_SOURCE,
         "facilities": facilities,
     }
-
-    # ── Cache befüllen ─────────────────────────────────────────────────────
-    _cache[cache_key] = result
-    _cache_ts = now
-
-    return result
 
 
 async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
@@ -377,6 +338,7 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
     Findet Park & Rail Anlagen für einen Bahnhof per Textsuche.
 
     Nützlich wenn man den Namen des Bahnhofs kennt, aber nicht die Koordinaten.
+    Sucht (case-insensitiv) im Anlagennamen.
 
     Args:
         station_name: Bahnhofsname (z.B. 'Zürich HB', 'Winterthur', 'Bern')
@@ -385,42 +347,34 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
     Returns:
         dict mit passenden Park & Rail Anlagen
     """
-    # Volltextsuche über beide API-Stile / alle Datensätze. Anführungszeichen
-    # im Suchbegriff werden entfernt, damit der ODSQL-where-Ausdruck nicht
-    # zerbricht.
-    safe_name = station_name.replace('"', "").replace("'", "")
-    attempts: list[tuple[str, dict]] = []
-    for ds in _PARK_RAIL_DATASETS:
-        # Explore API v2.1: ein bloßer String in `where` ist Volltextsuche.
-        attempts.append((
-            _V21_RECORDS.format(ds=ds),
-            {"where": f'"{safe_name}"', "limit": limit, "timezone": "Europe/Zurich"},
-        ))
-        # Legacy Records API v1: Freitextparameter `q`.
-        attempts.append((
-            _V1_SEARCH,
-            {"dataset": ds, "q": safe_name, "rows": limit},
-        ))
+    try:
+        features = await _get_features()
+    except APIError as e:
+        return {
+            "query": station_name,
+            "found": 0,
+            "api_key_required": False,
+            "data_source": _DATA_SOURCE,
+            "facilities": [],
+            "note": "Park+Rail-Datenquelle momentan nicht erreichbar.",
+            "error": str(e),
+        }
 
-    raw_records = await _fetch_records(attempts)
-
+    needle = station_name.strip().lower()
     facilities = []
-    for rec in raw_records:
-        fields = rec.get("fields", {}) or rec
-        geo = fields.get("geo_point_2d") or {}
-        if isinstance(geo, dict):
-            lat = geo.get("lat") or geo.get("latitude") or 0
-            lon = geo.get("lon") or geo.get("longitude") or 0
-        else:
-            lat, lon = 0, 0
-        formatted = _format_facility(rec, float(lat), float(lon))
-        if formatted:
+    for feature in features:
+        formatted = _format_feature(feature)
+        if formatted is None:
+            continue
+        if needle in formatted["name"].lower():
             facilities.append(formatted)
+            if len(facilities) >= limit:
+                break
 
     return {
         "query": station_name,
         "found": len(facilities),
         "api_key_required": False,
-        "data_source": "SBB Open Data Portal (data.sbb.ch)",
+        "data_source": _DATA_SOURCE,
         "facilities": facilities,
     }
