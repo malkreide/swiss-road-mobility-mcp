@@ -46,7 +46,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_find_nearby_returns_valid_structure(self):
         """Testet ob find_nearby_park_rail eine valide Struktur zurückgibt."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_nearby_park_rail(
             latitude=ZURICH_HB["lat"],
@@ -65,7 +65,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_find_nearby_search_params(self):
         """Testet ob die Suchparameter korrekt zurückgegeben werden."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_nearby_park_rail(
             latitude=47.5,
@@ -82,7 +82,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_facility_structure_when_found(self):
         """Testet die Struktur einer einzelnen P+R-Anlage."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_nearby_park_rail(
             latitude=ZURICH_HB["lat"],
@@ -106,7 +106,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_facilities_sorted_by_distance(self):
         """Testet ob Anlagen nach Distanz sortiert sind."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_nearby_park_rail(
             latitude=BERN_HB["lat"],
@@ -125,7 +125,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_find_by_station_name(self):
         """Testet die Textsuche nach Bahnhofsnamen."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_park_rail_by_station(
             station_name="Zürich",
@@ -140,7 +140,7 @@ class TestParkRailModule:
     @pytest.mark.asyncio
     async def test_empty_area_returns_zero_found(self):
         """Testet dass kein Absturz bei leerer Suche (sehr kleiner Radius)."""
-        from src.swiss_road_mobility_mcp import park_rail
+        from swiss_road_mobility_mcp import park_rail
 
         result = await park_rail.find_nearby_park_rail(
             latitude=46.8,
@@ -164,7 +164,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_find_nearest_station_zurich(self):
         """Testet ob der nächste Bahnhof bei Zürich HB gefunden wird."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         result = await multimodal._find_nearest_station(
             latitude=ZURICH_HB["lat"],
@@ -184,7 +184,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_find_stations_by_name(self):
         """Testet die Bahnhofs-Namenssuche."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         results = await multimodal._find_stations_by_name("Bern", limit=3)
 
@@ -199,7 +199,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_get_connections_valid_route(self):
         """Testet ÖV-Verbindungen zwischen zwei bekannten Bahnhöfen."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         try:
             connections = await multimodal._get_connections(
@@ -223,7 +223,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_mobility_snapshot_structure(self):
         """Testet die Struktur des Mobilitäts-Snapshots."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         result = await multimodal.build_mobility_snapshot(
             latitude=ZURICH_HB["lat"],
@@ -254,7 +254,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_mobility_snapshot_no_key_no_crash(self):
         """Testet dass der Snapshot ohne API-Key nicht abstürzt."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         # Sollte nie eine Exception werfen
         result = await multimodal.build_mobility_snapshot(
@@ -272,7 +272,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_multimodal_plan_structure(self):
         """Testet die Struktur des multimodalen Reiseplans."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         result = await multimodal.plan_multimodal_trip(
             start_latitude=DIETIKON["lat"],
@@ -300,7 +300,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_multimodal_plan_route_info(self):
         """Testet ob die Route-Infos korrekt gesetzt werden."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         result = await multimodal.plan_multimodal_trip(
             start_latitude=47.4,
@@ -319,7 +319,7 @@ class TestMultimodalModule:
     @pytest.mark.asyncio
     async def test_multimodal_plan_no_crash_invalid_destination(self):
         """Testet dass kein Absturz bei unbekanntem Ziel."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         # Nicht existierender Zielort – sollte Fehler graceful behandeln
         result = await multimodal.plan_multimodal_trip(
@@ -343,10 +343,6 @@ class TestPhase3Tools:
     @pytest.mark.asyncio
     async def test_road_park_rail_tool(self):
         """Testet das road_park_rail Tool via Server."""
-        import sys
-        # Server importieren
-        sys.path.insert(0, "src")
-
         from swiss_road_mobility_mcp.park_rail import find_nearby_park_rail
 
         result = await find_nearby_park_rail(
@@ -363,7 +359,7 @@ class TestPhase3Tools:
     @pytest.mark.asyncio
     async def test_mobility_snapshot_tool_complete(self):
         """Vollständiger Integration-Test des Mobility-Snapshots."""
-        from src.swiss_road_mobility_mcp import multimodal
+        from swiss_road_mobility_mcp import multimodal
 
         snapshot = await multimodal.build_mobility_snapshot(
             latitude=BERN_HB["lat"],
@@ -396,7 +392,7 @@ if __name__ == "__main__":
         """Schneller Smoke-Test ohne pytest."""
         print("🧪 Phase 3 Quick Check...\n")
 
-        from src.swiss_road_mobility_mcp import multimodal, park_rail
+        from swiss_road_mobility_mcp import multimodal, park_rail
 
         print("1️⃣  Park & Rail (Zürich, 5km)...")
         pr = await park_rail.find_nearby_park_rail(47.3769, 8.5417, 5.0, 5)

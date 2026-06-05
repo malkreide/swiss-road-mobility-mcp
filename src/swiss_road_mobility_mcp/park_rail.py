@@ -35,24 +35,26 @@ logger = logging.getLogger("swiss-road-mobility-mcp")
 # Konstanten
 # ---------------------------------------------------------------------------
 
-# Verifizierter Endpunkt (Stand März 2026).
-# Das ursprüngliche Dataset 'park-and-rail' wurde von SBB entfernt (HTTP 404).
-# Ersatz: 'station-mobility' enthält alle Park+Rail-Felder:
-#   parkrail_anzahl, parkrail_preis_tag, parkrail_preis_monat, parkrail_preis_jahr,
-#   parkrail_app, parkrail_webshop, parkrail_lokal, parkrail_automat, geopos usw.
-# Geofilter-Syntax (Opendatasoft ODSQL v2):
-#   ?where=parkrail_anzahl>0 AND distance(geopos,geom'POINT(lon lat)',Xkm)
-PARK_RAIL_URL = (
-    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/station-mobility/records"
-)
+# SBB Open Data hat den Park+Rail-Datensatz mehrfach umbenannt; die
+# Park+Rail-Felder (parkrail_anzahl, parkrail_preis_tag, geopos …) stecken
+# heute in den Datensätzen 'mobilitat' bzw. 'station-mobility'.
+#
+# Wir kennen NICHT garantiert, welche API-Version (Explore v2.1 oder die
+# Legacy Records-API v1) auf data.sbb.ch je Datensatz aktiv ist – und welche
+# Geofilter-Syntax akzeptiert wird. Frühere Versionen mischten v1-Parameter
+# (geofilter.distance) mit dem v2.1-Pfad, was HTTP 404/400 auslöste.
+# Darum probieren wir pro Datensatz BEIDE API-Stile durch und nehmen die
+# erste 2xx-Antwort. _format_facility versteht beide Response-Formen
+# (v2.1: flache Felder; v1: verschachtelt unter "fields").
+_PARK_RAIL_DATASETS = ["mobilitat", "station-mobility", "park-and-rail"]
 
-# Bug #1 Fix (v0.3.1): SBB hat den Datensatz mehrfach umbenannt.
-# Fallback-Kette: wir probieren alle bekannten Kandidaten durch.
-_PARK_RAIL_CANDIDATES = [
-    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/station-mobility/records",
-    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/park-and-rail/records",
-    "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/mobilitat/records",
-]
+# Explore API v2.1 – Datensatz-Records (flache Felder, geopos als geo_point).
+_V21_RECORDS = "https://data.sbb.ch/api/explore/v2.1/catalog/datasets/{ds}/records"
+# Legacy Records API v1 – unterstützt nativ geofilter.distance (lat,lon,Meter).
+_V1_SEARCH = "https://data.sbb.ch/api/records/1.0/search/"
+
+# Primärer Endpunkt (für die Textsuche / Backwards-Kompatibilität).
+PARK_RAIL_URL = _V21_RECORDS.format(ds="mobilitat")
 
 _CACHE_TTL = 300.0  # 5 Minuten (Kapazitätsdaten ändern sich selten)
 _cache: dict = {}
@@ -200,6 +202,102 @@ def _format_facility(record: dict, lat_center: float, lon_center: float) -> dict
 
 
 # ---------------------------------------------------------------------------
+# Netzwerk-Helfer
+# ---------------------------------------------------------------------------
+
+async def _fetch_records(attempts: list[tuple[str, dict]]) -> list[dict]:
+    """Probiert eine Liste von (URL, params)-Versuchen durch.
+
+    Gibt die rohen Records der ersten 2xx-Antwort zurück (auch wenn leer –
+    ein leeres, aber gültiges Resultat ist Erfolg). HTTP 400/404 und
+    Netzwerkfehler führen zum nächsten Versuch. Erst wenn ALLE Versuche
+    scheitern, wird ein APIError geworfen.
+    """
+    last_error = ""
+    async with async_client(
+        timeout=15.0,
+        follow_redirects=True,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        },
+    ) as client:
+        for url, params in attempts:
+            try:
+                response = await client.get(url, params=params)
+                # 404 = Datensatz/Pfad unbekannt, 400 = Query-Feld passt nicht
+                # zu diesem Datensatz/dieser API-Version → nächster Versuch.
+                if response.status_code in (400, 404):
+                    logger.warning(
+                        "Park+Rail: %s liefert HTTP %s – nächster Kandidat wird versucht.",
+                        url, response.status_code,
+                    )
+                    last_error = f"HTTP {response.status_code} bei {url}"
+                    continue
+                response.raise_for_status()
+                data = response.json()
+                # v2.1: results[]; v1: records[]
+                return data.get("results") or data.get("records") or []
+            except httpx.HTTPStatusError as e:
+                # OBS-002: rohen Upstream-Body nur server-seitig loggen.
+                logger.warning(
+                    "Park+Rail: HTTP %s bei %s: %s",
+                    e.response.status_code, url, e.response.text[:200],
+                )
+                last_error = f"HTTP {e.response.status_code} bei {url}"
+            except httpx.TimeoutException:
+                last_error = f"Timeout (15s) bei {url}"
+                logger.warning("Park+Rail: %s", last_error)
+            except httpx.ConnectError as e:
+                last_error = f"Verbindungsfehler bei {url}: {e}"
+                logger.warning("Park+Rail: %s", last_error)
+
+    raise APIError(
+        f"Alle SBB Park+Rail-Endpunkte nicht erreichbar. "
+        f"Letzter Fehler: {last_error}. "
+        "Bitte prüfe https://data.sbb.ch für den aktuellen Datensatz-Namen "
+        "oder nutze opendata.swiss als Alternative."
+    )
+
+
+def _geo_search_attempts(
+    latitude: float, longitude: float, radius_km: float, limit: int
+) -> list[tuple[str, dict]]:
+    """Baut die (URL, params)-Versuche für eine Umkreissuche.
+
+    Pro Datensatz zwei Stile:
+      1. Explore API v2.1 – Geofilter via ``within_distance()`` in ``where``.
+      2. Legacy Records API v1 – nativer ``geofilter.distance`` (lat,lon,Meter).
+    """
+    radius_m = int(radius_km * 1000)
+    rows = min(limit * 2, 100)  # mehr holen, dann clientseitig filtern/sortieren
+    attempts: list[tuple[str, dict]] = []
+    for ds in _PARK_RAIL_DATASETS:
+        attempts.append((
+            _V21_RECORDS.format(ds=ds),
+            {
+                # WKT-Reihenfolge: POINT(lon lat)
+                "where": (
+                    f"within_distance(geopos, geom'POINT({longitude} {latitude})', "
+                    f"{radius_km}km)"
+                ),
+                "limit": rows,
+                "offset": 0,
+                "timezone": "Europe/Zurich",
+            },
+        ))
+        attempts.append((
+            _V1_SEARCH,
+            {
+                "dataset": ds,
+                "geofilter.distance": f"{latitude},{longitude},{radius_m}",
+                "rows": rows,
+            },
+        ))
+    return attempts
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -234,70 +332,12 @@ async def find_nearby_park_rail(
             logger.debug("Cache HIT: park_rail")
             return _cache[cache_key]
 
-    radius_m = int(radius_km * 1000)
-
     # ── SBB Open Data API-Abfrage ──────────────────────────────────────────
-    # Geofilter im Opendatasoft-Format
-    params = {
-        "limit": min(limit * 2, 100),  # Mehr holen, dann filtern
-        "offset": 0,
-        "geofilter.distance": f"{latitude},{longitude},{radius_m}",
-        "order_by": "anzahl_pp_total desc",
-        "timezone": "Europe/Zurich",
-    }
-
-    async with async_client(
-        timeout=15.0,
-        follow_redirects=True,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
-        },
-    ) as client:
-        # Bug #1 Fix: Fallback-Kette über mehrere Endpunkt-Namen.
-        # SBB hat den Datensatz «park-and-rail» umbenannt; wir probieren
-        # alle bekannten Kandidaten durch, bis einer antwortet.
-        data = None
-        last_error: str = ""
-        for candidate_url in _PARK_RAIL_CANDIDATES:
-            try:
-                response = await client.get(candidate_url, params=params)
-                if response.status_code == 404:
-                    logger.warning(
-                        f"Park+Rail: Endpunkt {candidate_url} liefert 404 – "
-                        "nächster Kandidat wird versucht."
-                    )
-                    last_error = f"HTTP 404 bei {candidate_url}"
-                    continue
-                response.raise_for_status()
-                data = response.json()
-                break  # Erfolg – Schleife verlassen
-            except httpx.HTTPStatusError as e:
-                # OBS-002: log the raw upstream body server-side; last_error is
-                # surfaced to the caller, so keep it status-only.
-                logger.warning(
-                    "Park+Rail: HTTP %s bei %s: %s",
-                    e.response.status_code, candidate_url, e.response.text[:200],
-                )
-                last_error = f"HTTP {e.response.status_code} bei {candidate_url}"
-            except httpx.TimeoutException:
-                last_error = f"Timeout (15s) bei {candidate_url}"
-                logger.warning(f"Park+Rail: {last_error}")
-            except httpx.ConnectError as e:
-                last_error = f"Verbindungsfehler bei {candidate_url}: {e}"
-                logger.warning(f"Park+Rail: {last_error}")
-
-        if data is None:
-            raise APIError(
-                f"Alle SBB Park+Rail-Endpunkte nicht erreichbar. "
-                f"Letzter Fehler: {last_error}. "
-                "Bitte prüfe https://data.sbb.ch für den aktuellen Datensatz-Namen "
-                "oder nutze opendata.swiss als Alternative."
-            )
-
-    # ── JSON-Parsing ───────────────────────────────────────────────────────
-    # Opendatasoft v2 gibt records[] zurück
-    raw_records = data.get("results") or data.get("records") or []
+    # Probiert v2.1- und v1-Stil über alle bekannten Datensätze durch und
+    # liefert die Records der ersten erfolgreichen Antwort.
+    raw_records = await _fetch_records(
+        _geo_search_attempts(latitude, longitude, radius_km, limit)
+    )
 
     facilities = []
     for rec in raw_records:
@@ -345,37 +385,24 @@ async def find_park_rail_by_station(station_name: str, limit: int = 5) -> dict:
     Returns:
         dict mit passenden Park & Rail Anlagen
     """
-    # Textbasierte Suche via Opendatasoft WHERE-Klausel
-    params = {
-        "limit": limit,
-        "where": f"search(bezeichnung, \"{station_name}\") or search(bahnhof, \"{station_name}\")",
-        "timezone": "Europe/Zurich",
-    }
+    # Volltextsuche über beide API-Stile / alle Datensätze. Anführungszeichen
+    # im Suchbegriff werden entfernt, damit der ODSQL-where-Ausdruck nicht
+    # zerbricht.
+    safe_name = station_name.replace('"', "").replace("'", "")
+    attempts: list[tuple[str, dict]] = []
+    for ds in _PARK_RAIL_DATASETS:
+        # Explore API v2.1: ein bloßer String in `where` ist Volltextsuche.
+        attempts.append((
+            _V21_RECORDS.format(ds=ds),
+            {"where": f'"{safe_name}"', "limit": limit, "timezone": "Europe/Zurich"},
+        ))
+        # Legacy Records API v1: Freitextparameter `q`.
+        attempts.append((
+            _V1_SEARCH,
+            {"dataset": ds, "q": safe_name, "rows": limit},
+        ))
 
-    async with async_client(
-        timeout=15.0,
-        follow_redirects=True,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
-        },
-    ) as client:
-        try:
-            response = await client.get(PARK_RAIL_URL, params=params)
-            response.raise_for_status()
-            data = response.json()
-        except httpx.HTTPStatusError as e:
-            logger.warning(
-                "SBB Open Data HTTP %s: %s",
-                e.response.status_code, e.response.text[:200],
-            )
-            raise APIError(
-                f"SBB Open Data antwortete mit HTTP {e.response.status_code}."
-            )
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            raise APIError(f"Verbindungsfehler zur SBB Open Data API: {e}")
-
-    raw_records = data.get("results") or data.get("records") or []
+    raw_records = await _fetch_records(attempts)
 
     facilities = []
     for rec in raw_records:
