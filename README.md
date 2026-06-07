@@ -386,3 +386,5 @@ Hayal Oezkan · [malkreide](https://github.com/malkreide)
 - **Related:** [swiss-transport-mcp](https://github.com/malkreide/swiss-transport-mcp) — Public transport (trains, buses, trams)
 - **Related:** [zurich-opendata-mcp](https://github.com/malkreide/zurich-opendata-mcp) — 900+ datasets from the City of Zurich
 - **Portfolio:** [Swiss Public Data MCP Portfolio](https://github.com/malkreide/swiss-public-data-mcp)
+
+<!-- mcp-name: io.github.malkreide/swiss-road-mobility-mcp -->

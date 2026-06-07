@@ -60,7 +60,6 @@ tracing = [
 swiss-road-mobility-mcp = "swiss_road_mobility_mcp.server:main"
 
 [project.urls]
-"mcp-name" = "io.github.malkreide/swiss-road-mobility-mcp"
 Homepage   = "https://github.com/malkreide/swiss-road-mobility-mcp"
 Repository = "https://github.com/malkreide/swiss-road-mobility-mcp"
 Issues     = "https://github.com/malkreide/swiss-road-mobility-mcp/issues"
