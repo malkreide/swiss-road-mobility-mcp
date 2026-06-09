@@ -45,7 +45,10 @@ logger = logging.getLogger("swiss-road-mobility-mcp")
 # ---------------------------------------------------------------------------
 
 # CKAN-API der Open-Data-Plattform Mobilität Schweiz (kein API-Key nötig).
-_CKAN_PACKAGE_SHOW = "https://api.opentransportdata.swiss/ckan-api/package_show"
+# Öffentliche CKAN-Action-API des Datenportals (kein API-Token nötig).
+# Der Proxy auf api.opentransportdata.swiss/ckan-api/ verlangt dagegen einen
+# Authorization-Header (HTTP 401), daher gehen wir direkt auf data.*.
+_CKAN_PACKAGE_SHOW = "https://data.opentransportdata.swiss/api/3/action/package_show"
 
 # Reihenfolge: neuer konsolidierter Datensatz zuerst, alter als Fallback.
 _PARK_RAIL_DATASETS = ["bike-and-car-parking", "parking-facilities"]
@@ -236,8 +239,12 @@ async def _fetch_park_rail_features() -> list[dict]:
                     e.response.status_code, dataset_id, e.response.text[:200],
                 )
                 last_error = f"HTTP {e.response.status_code} bei Datensatz '{dataset_id}'"
-            except (httpx.TimeoutException, httpx.ConnectError) as e:
-                last_error = f"Verbindungsfehler bei Datensatz '{dataset_id}': {e}"
+            except httpx.RequestError as e:
+                # Basisklasse für ALLE Transport-/Protokollfehler: ConnectError,
+                # TimeoutException, RemoteProtocolError ("Server disconnected"),
+                # ReadError usw. – alle dürfen nur den nächsten Kandidaten auslösen,
+                # niemals die Funktion abstürzen lassen.
+                last_error = f"Verbindungsfehler bei Datensatz '{dataset_id}': {type(e).__name__}: {e}"
                 logger.warning("Park+Rail: %s", last_error)
             except EgressBlockedError as e:
                 last_error = f"Egress blockiert für Datensatz '{dataset_id}': {e}"
