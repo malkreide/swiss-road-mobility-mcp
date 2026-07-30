@@ -5,7 +5,7 @@
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE ./
 COPY src/ src/
 
 # Install into an isolated venv so the runtime image carries only the
