@@ -42,13 +42,13 @@ dev = [
     "respx>=0.23.1",
     # Exakter Pin, und die einzige Stelle, an der die ruff-Version steht. Als
     # hier eine Spanne stand, loeste `pip install -e ".[dev]"` auf die jeweils
-    # neueste Version auf, waehrend ci.yml `ruff==0.16.1` darueber installierte
+    # neueste Version auf, waehrend ci.yml `ruff==0.16.3` darueber installierte
     # — lokaler Lauf und Gate waren sich also ueber die Version uneinig. Diese
     # Zeile hochzuziehen ist eine bewusste Entscheidung: ein neues ruff kann
     # Regelsatz oder Formatierer aendern und unberuehrten Code rot machen.
     # `test_werkzeug_versionen.py` faellt, wenn hier wieder eine Spanne steht
     # oder ein Workflow eine zweite Version setzt.
-    "ruff==0.16.1",
+    "ruff==0.16.3",
     # OBS-006: installed in dev so the tracing tests run in CI.
     "opentelemetry-sdk>=1.42.1",
     "opentelemetry-exporter-otlp-proto-http>=1.42.1",
