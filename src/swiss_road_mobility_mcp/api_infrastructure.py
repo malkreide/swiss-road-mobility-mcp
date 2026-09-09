@@ -42,6 +42,42 @@ MAX_RATE_LIMIT_WAIT = 10.0
 # durch echtes Warten; es war denn auch ungeprueft, beide Zweige.
 _sleep = asyncio.sleep
 
+# Das Timeout des HTTP-Clients, an genau einer Stelle. Es stand doppelt da:
+# einmal als Argument im Konstruktor, einmal als "30s" im Text der
+# Timeout-Meldung. Wer das eine anhebt und das andere vergisst, laesst den
+# Server eine Frist nennen, die er gar nicht faehrt.
+REQUEST_TIMEOUT = 30.0
+
+# Wie oft ein Versuch wiederholt wird, der die Quelle gar nicht erreicht hat.
+#
+# Die Trennlinie ist nicht der Statuscode, sondern ob die Quelle ueberhaupt
+# geantwortet hat. Ein Statuscode ist eine Auskunft und faellt beim zweiten
+# Mal gleich aus — ihn zu wiederholen kostet die Quelle eine Anfrage und
+# bringt nichts. Ein abgerissener Verbindungsaufbau ist keine Auskunft und
+# faellt womoeglich anders aus.
+#
+# Genau daran starb der naechtliche Live-Lauf vom 7.9.2026: ein
+# httpx.ConnectError auf data.geo.admin.ch, waehrend drei andere Tests
+# desselben Laufs dieselbe URL erfolgreich luden. Die Quelle war da, dieser
+# eine Aufbau nicht — und dasselbe traf produktiv jeden Anrufer, der zufaellig
+# in denselben Zappler lief.
+MAX_TRANSIENT_RETRIES = 2
+RETRY_BACKOFF_SECONDS = 0.5
+
+# Wiederholt wird nur, was schnell scheitert. Ein ConnectTimeout oder
+# ReadTimeout hat die Uhr vollaufen lassen; ihn zu wiederholen verdreifacht
+# die Wartezeit des Anrufers, ohne dass sich an der Ursache etwas geaendert
+# haette — der Anrufer hat sein eigenes Timeout und ist dann laengst weg.
+# Diese hier brechen binnen Millisekunden ab, ein zweiter Versuch ist billig.
+# (In httpx erben die Timeout-Klassen von TimeoutException, die Klassen hier
+# von NetworkError bzw. ProtocolError; sie ueberschneiden sich nicht.)
+TRANSIENT_ERRORS: tuple[type[Exception], ...] = (
+    httpx.ConnectError,
+    httpx.ReadError,
+    httpx.WriteError,
+    httpx.RemoteProtocolError,
+)
+
 
 # =============================================================================
 # Rate Limiter – Der Türsteher
@@ -162,7 +198,7 @@ class MobilityHTTPClient:
         self._cache = SimpleCache()
         self._rate_limiters: dict[str, RateLimiter] = {}
         self._client = async_client(
-            timeout=30.0,
+            timeout=REQUEST_TIMEOUT,
             follow_redirects=True,
             headers={
                 "User-Agent": USER_AGENT,
@@ -211,29 +247,72 @@ class MobilityHTTPClient:
             limiter.record()
 
         # 3. Request
-        try:
-            response = await self._client.get(url, params=params)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            # OBS-002: log the raw upstream body server-side, but never surface
-            # it to the caller/LLM (information disclosure). The client sees a
-            # generic, status-only message.
-            logger.warning(
-                "Upstream HTTP %s from %s: %s",
-                e.response.status_code,
-                url,
-                e.response.text[:200],
-            )
-            raise APIError(f"Die Datenquelle antwortete mit HTTP {e.response.status_code}.")
-        except httpx.TimeoutException:
-            raise APIError(f"Timeout nach 30s für {url}")
-        except httpx.ConnectError:
-            raise APIError(f"Verbindung zu {url} fehlgeschlagen.")
+        response = await self._get_with_retries(url, params)
 
         # 4. Parse & Cache
         result = response.json()
         self._cache.set(cache_prefix, cache_params, result, cache_ttl)
         return result
+
+    async def _get_with_retries(self, url: str, params: dict) -> httpx.Response:
+        """
+        GET mit Wiederholung genau der Fehler, bei denen die Quelle schweigt.
+
+        Metapher: Beim Anrufen gibt ein Besetztzeichen keine Auskunft ueber den
+        Anschluss — man waehlt noch einmal. Eine Absage der Person am anderen
+        Ende dagegen wiederholt sich, wenn man sie wiederholt.
+
+        Der Tuersteher zaehlt den Aufruf einmal, nicht je Versuch: gezaehlt
+        wird, was die Quelle Arbeit kostet, und ein Aufbau, der nie zustande
+        kam, kostet sie keine. Wiederholt werden ohnehin nur Fehlschlaege —
+        eine Antwort beendet die Schleife.
+
+        Ein von der Egress-Allowlist blockierter Host (`EgressBlockedError`,
+        SEC-004/005) faellt hier nicht hinein: die Sperre ist keine
+        httpx-Exception und keine Aussage ueber die Erreichbarkeit. Sie
+        durchlaeuft die Schleife ungefangen, wie sie soll.
+        """
+        letzter: Exception | None = None
+
+        for versuch in range(MAX_TRANSIENT_RETRIES + 1):
+            # Die Pause steht vor dem Versuch, nicht hinter dem Fehlschlag:
+            # so gibt es keinen Zweig, der nach dem letzten Versuch noch
+            # wartet, ohne dass jemand auf das Ergebnis dieses Wartens wartet.
+            if versuch:
+                await _sleep(RETRY_BACKOFF_SECONDS * 2 ** (versuch - 1))
+
+            try:
+                response = await self._client.get(url, params=params)
+                response.raise_for_status()
+                return response
+            except httpx.HTTPStatusError as e:
+                # OBS-002: log the raw upstream body server-side, but never
+                # surface it to the caller/LLM (information disclosure). The
+                # client sees a generic, status-only message.
+                logger.warning(
+                    "Upstream HTTP %s from %s: %s",
+                    e.response.status_code,
+                    url,
+                    e.response.text[:200],
+                )
+                raise APIError(f"Die Datenquelle antwortete mit HTTP {e.response.status_code}.") from e
+            except httpx.TimeoutException as e:
+                raise APIError(f"Timeout nach {REQUEST_TIMEOUT:.0f}s für {url}") from e
+            except TRANSIENT_ERRORS as e:
+                letzter = e
+                logger.warning(
+                    "Verbindungsversuch %s/%s zu %s gescheitert (%s).",
+                    versuch + 1,
+                    MAX_TRANSIENT_RETRIES + 1,
+                    url,
+                    type(e).__name__,
+                )
+
+        # Die Zahl gehoert in die Meldung: "fehlgeschlagen" allein liest sich
+        # wie ein einmaliger Zufall und laedt zum Nachfassen ein. Nach drei
+        # Aufbauversuchen ist das Nachfassen schon geschehen.
+        versuche = MAX_TRANSIENT_RETRIES + 1
+        raise APIError(f"Verbindung zu {url} fehlgeschlagen (nach {versuche} Versuchen).") from letzter
 
     async def close(self):
         await self._client.aclose()

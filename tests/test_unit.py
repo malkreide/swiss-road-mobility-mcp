@@ -14,6 +14,7 @@ Coverage per layer:
   - geo_admin: address geocoding happy-path + empty result.
 """
 
+import httpx
 import pytest
 import respx
 
@@ -347,3 +348,145 @@ class TestRateLimitTor:
         quelle = inspect.getsource(MobilityHTTPClient.get_json)
         assert "await _sleep(" in quelle, "das Tor wartet nicht mehr ueber den Alias"
         assert "asyncio.sleep" not in quelle, "zurueck auf der stdlib-Funktion"
+
+
+# ===========================================================================
+# Der abgerissene Verbindungsaufbau
+#
+# Der naechtliche Live-Lauf vom 7.9.2026 (Run 96) war rot, weil ein einziger
+# Aufbau zu data.geo.admin.ch mit `httpx.ConnectError` scheiterte. Die
+# Positivkontrolle steckte im selben Lauf: drei weitere Tests luden dieselbe
+# URL erfolgreich, und der Lauf der Folgenacht war wieder gruen. Die Quelle
+# war also da — nur dieser eine Aufbau nicht.
+#
+# Ungeprueft war bis hierher die Unterscheidung, an der alles haengt: ob die
+# Quelle *geantwortet* hat. Ein Statuscode ist eine Auskunft und wiederholt
+# sich; ein abgerissener Aufbau ist keine. Die Tests unten fahren beide
+# Richtungen, weil ein Retry, der auch ueber Statuscodes laeuft, dieselbe
+# Absage dreimal einholt und die Quelle dafuer dreimal fragt.
+# ===========================================================================
+
+
+class TestVerbindungsabbruchWirdWiederholt:
+    # Allow-gelistet (SEC-004) und zugleich der Host aus dem Vorfall.
+    URL = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/data/x.json"
+
+    @staticmethod
+    def _ohne_warten(monkeypatch) -> list[float]:
+        """Nimmt dem Backoff die Zeit ab und schreibt mit, wie lange er wollte.
+
+        Ueber den Modul-Alias `_sleep`, nicht ueber `api_infrastructure.asyncio`:
+        letzteres *ist* das stdlib-Modul und entschaerfte das Warten im ganzen
+        Prozess.
+        """
+        geschlafen: list[float] = []
+
+        async def _kein_schlaf(sekunden: float) -> None:
+            geschlafen.append(sekunden)
+
+        monkeypatch.setattr(api_infrastructure, "_sleep", _kein_schlaf)
+        return geschlafen
+
+    @respx.mock
+    async def test_ein_abgerissener_aufbau_wird_wiederholt_und_die_daten_kommen(self, monkeypatch, client):
+        """Der Fall vom 7.9.2026: erster Aufbau weg, zweiter traegt."""
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).mock(
+            side_effect=[httpx.ConnectError("kein Aufbau"), httpx.Response(200, json={"features": [1]})]
+        )
+
+        ergebnis = await client.get_json(self.URL, use_cache=False)
+
+        assert ergebnis == {"features": [1]}
+        assert route.call_count == 2, "der zweite Versuch fand gar nicht statt"
+
+    @respx.mock
+    async def test_nach_dem_letzten_versuch_wird_abgesagt(self, monkeypatch, client):
+        """Wiederholt wird begrenzt — sonst haengt der Anrufer an einer toten Leitung."""
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).mock(side_effect=httpx.ConnectError("kein Aufbau"))
+
+        with pytest.raises(APIError) as fehler:
+            await client.get_json(self.URL, use_cache=False)
+
+        versuche = api_infrastructure.MAX_TRANSIENT_RETRIES + 1
+        assert route.call_count == versuche, f"{route.call_count} Versuche statt {versuche}"
+        assert str(versuche) in str(fehler.value), f"die Absage nennt die Zahl der Versuche nicht: {fehler.value}"
+
+    @respx.mock
+    async def test_die_pause_waechst_und_steht_vor_dem_versuch(self, monkeypatch, client):
+        """Zwischen die Versuche gehoert Abstand, und nach den letzten keiner.
+
+        Ein Backoff hinter dem letzten Fehlschlag liesse den Anrufer warten,
+        ohne dass danach noch etwas passiert.
+        """
+        geschlafen = self._ohne_warten(monkeypatch)
+        respx.get(self.URL).mock(side_effect=httpx.ConnectError("kein Aufbau"))
+
+        with pytest.raises(APIError):
+            await client.get_json(self.URL, use_cache=False)
+
+        erwartet = [
+            api_infrastructure.RETRY_BACKOFF_SECONDS * 2**i for i in range(api_infrastructure.MAX_TRANSIENT_RETRIES)
+        ]
+        assert geschlafen == erwartet, f"gewartet wurde {geschlafen}, erwartet war {erwartet}"
+
+    @respx.mock
+    async def test_ein_statuscode_wird_nicht_wiederholt(self, monkeypatch, client):
+        """Gegenprobe: Die Quelle hat geantwortet — dreimal fragen aendert daran nichts.
+
+        Faellt dieser Test, laeuft der Retry ueber Antworten statt ueber ihr
+        Ausbleiben und holt jede Absage dreifach ein.
+        """
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).respond(500, text="boom")
+
+        with pytest.raises(APIError) as fehler:
+            await client.get_json(self.URL, use_cache=False)
+
+        assert route.call_count == 1, f"ein HTTP 500 wurde {route.call_count}-mal abgeholt"
+        assert "500" in str(fehler.value)
+
+    @respx.mock
+    async def test_ein_timeout_wird_nicht_wiederholt(self, monkeypatch, client):
+        """Gegenprobe: Wer die Uhr hat vollaufen lassen, laesst sie zweimal vollaufen.
+
+        Wiederholt wird nur, was schnell scheitert. Ein ReadTimeout nach der
+        vollen Frist zu wiederholen, verdreifacht die Wartezeit des Anrufers —
+        der dann laengst sein eigenes Timeout gezogen hat.
+        """
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).mock(side_effect=httpx.ReadTimeout("Uhr voll"))
+
+        with pytest.raises(APIError) as fehler:
+            await client.get_json(self.URL, use_cache=False)
+
+        assert route.call_count == 1, f"ein Timeout wurde {route.call_count}-mal abgewartet"
+        assert "Timeout" in str(fehler.value)
+
+    @respx.mock
+    async def test_die_frist_steht_nur_an_einer_stelle(self):
+        """Die 30s im Konstruktor und die 30s in der Meldung waren zwei Zahlen.
+
+        Wer die eine anhebt und die andere vergisst, laesst den Server eine
+        Frist nennen, die er gar nicht faehrt — und es faellt niemandem auf,
+        weil die Meldung ja plausibel aussieht. Geprueft wird deshalb nicht
+        der Quelltext, sondern beide Enden gegen denselben verstellten Wert.
+        """
+        monkeypatch = pytest.MonkeyPatch()
+        try:
+            monkeypatch.setattr(api_infrastructure, "REQUEST_TIMEOUT", 7.0)
+            respx.get(self.URL).mock(side_effect=httpx.ReadTimeout("Uhr voll"))
+            client = MobilityHTTPClient()
+
+            assert client._client.timeout.read == 7.0, "der Client faehrt nicht die Konstante"
+
+            with pytest.raises(APIError) as fehler:
+                await client.get_json(self.URL, use_cache=False)
+
+            assert "7s" in str(fehler.value), (
+                f"die Meldung nennt eine andere Frist als der Client faehrt: {fehler.value}"
+            )
+            await client.close()
+        finally:
+            monkeypatch.undo()
