@@ -303,6 +303,42 @@ bekannten Schubladen zu zwingen: Dieser Abschnitt musste schon einmal von drei
 auf vier Gründe wachsen, und die 👍-Reaktion stand hier zwei Fassungen lang als
 Tatsache.
 
+**Seit dem 9.9.2026 ein fünfter Text, und diesmal ein nützlicher.** Codex setzt
+unter den PR einen Statuskasten und schreibt darin denselben Kommentar fort,
+statt einen neuen zu schreiben. Erkennbar am HTML-Marker
+`<!-- codex-pull-request-review-summary -->`, im Kern eine Tabelle:
+
+```
+| Review         | Status                  | Commit    | Review trigger     |
+| 📝 Code Review | 🔄 Running since <Zeit> | `0ea208b` | Draft marked ready |
+```
+
+Nach dem Lauf steht dort `✅ Completed <Zeit>` — unter derselben Kommentar-ID,
+sichtbar nur am `updated_at`. Zwei Folgen:
+
+- **Der Zähler wird noch unbrauchbarer.** `comments: 1` deckt jetzt nicht mehr
+  nur die drei gegensätzlichen Bedeutungen von oben ab, sondern zusätzlich zwei
+  Zeitpunkte desselben Laufs: läuft noch und ist fertig. Gleiche Zahl, gleiche
+  ID, entgegengesetzte Auskunft.
+- **Erstmals steht der Commit dabei.** Damit ist prüfbar, ob der Review den
+  Head gesehen hat, den man mergen will. Vorher trug nur das Review-Objekt eine
+  Commit-Angabe — und das gibt es ohne Befund gerade nicht.
+
+**`Completed` heisst fertig, nicht befundlos.** Belegt ist Befundlosigkeit erst
+durch `Completed` **und** ein leeres `get_reviews`; der Statuskasten allein
+sagt nur, dass gelaufen wurde. So gemessen am 9.9. an PR #79 (`0ea208b`) und
+#80 (`2ec83f6`): beide `Completed`, beide `get_reviews == []`, beide ohne
+Review-Kommentare.
+
+Ungemessen bleibt, wie der Statuskasten bei einem *Befund* aussieht — beide
+beobachteten Läufe waren ohne. Und die alte Befundlos-Meldung («Didn't find any
+major issues») kam in keinem der beiden; ob sie daneben noch vorkommt, hat
+niemand geprüft. Zwei Läufe sind keine Messreihe.
+
+Die 👍-Reaktion blieb erneut aus, bei beiden — `reactions.total_count: 0`,
+während der Infokasten sie weiter behauptet. Dritter Beleg dafür, dass dieser
+Infokasten keine Quelle ist.
+
 Und ein befundloser Lauf ist kein Freispruch. Am 23.8. lief derselbe Text durch
 42 Reviews: 36 meldeten denselben P2-Befund, 6 die Befundlos-Meldung — gleiche
 Eingabe, gegenteiliges Urteil, alles in denselben neun Minuten. Ein sauberer
@@ -323,6 +359,18 @@ mergen. Am 21./22.8. lagen zwischen «ready for review» und Merge mehrfach drei
 bis fünf Sekunden. Codex wird beim Umschalten von Draft auf ready ausgelöst und
 braucht danach Zeit; wer sofort mergt, hat das Häkchen gesetzt und den Review
 nicht abgewartet.
+
+Am 9.9.2026 dasselbe zweimal in sechs Minuten: PR #79 drei Sekunden nach
+«ready» gemergt, der Review startete vier Sekunden *nach* dem Merge; PR #80
+acht Sekunden, der Review lief beim Merge noch. Wie lange er braucht, ist jetzt
+messbar — 1 min 14 s und 1 min 19 s. Zwei Messungen sind keine Norm, aber sie
+zeigen die Grössenordnung: Minuten, nicht Sekunden.
+
+Der Statuskasten macht das erstmals *vor* dem Merge sichtbar. Steht dort
+`Running`, ist der Review nicht durch; das genügt als Handgriff und ist
+billiger als jede Nachbetrachtung. Wer die Bedingung härter will als einen
+Handgriff, hängt den Codex-Check als Required Check in die
+Branch-Protection-Regeln — dann sperrt sie, ohne von Sekunden abzuhängen.
 
 Das Kontingent hängt am Konto, nicht am Repo, und Code-Reviews haben einen
 eigenen Topf — nur GitHub-getriggerte Reviews zählen hinein. ChatGPT-Pläne
