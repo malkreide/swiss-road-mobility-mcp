@@ -375,8 +375,17 @@ wie der Code: Nichts ist rot, weil nichts geprüft wird, worauf es ankommt.
 
 ## Teil 2 — dieses Repo
 
-**ruff:** genau eine Quelle — `ruff==0.16.3` im `[dev]`-Extra von
-`pyproject.toml`. `pip install -e ".[dev]"` reicht also, lokal wie in der CI.
+**ruff:** genau eine Quelle — der exakte Pin im `[dev]`-Extra von
+`pyproject.toml`. Die Version steht hier bewusst *nicht*: Dependabot hebt sie
+regelmässig an, und ein zweiter Ort wird dabei still falsch. Am 9.9.2026 stand
+hier noch `0.16.3`, während der Pin auf `0.16.4` lag — und während die
+Korrektur geschrieben wurde, hob Dependabot ihn auf `0.16.6`. Ein Satz, der
+«genau eine Quelle» sagt und die Zahl gleich danach ein zweites Mal nennt,
+schlägt sich selbst. Wer die Version braucht, liest sie im `[dev]`-Extra oder
+lässt sie sich von `python scripts/check_ruff_pin.py` nennen — das Skript
+vergleicht beide Aufrufwege (`ruff …` und `python -m ruff …`) gegen den Pin
+und sagt im Fehlerfall, welcher welche Version meldet.
+`pip install -e ".[dev]"` reicht also, lokal wie in der CI.
 Keine zweite Version in die Workflows schreiben: ein solcher Schritt läuft
 nach dem `[dev]`-Install und überstimmt den Pin still (`ci.yml` hatte einen;
 `test_werkzeug_versionen.py` hält beides fest). Eine `.pre-commit-config.yaml`
