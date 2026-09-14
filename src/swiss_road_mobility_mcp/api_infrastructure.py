@@ -78,6 +78,26 @@ TRANSIENT_ERRORS: tuple[type[Exception], ...] = (
     httpx.RemoteProtocolError,
 )
 
+# Ein 5xx ist keine Auskunft ueber den Vertrag, sondern die Quelle beim
+# Stolpern. Entscheidend ist nie der Statuscode, sondern ob die Quelle
+# ueberhaupt geantwortet hat — und "Internal Server Error" ist keine Antwort
+# auf die gestellte Frage, sondern ein Bericht ueber das eigene Scheitern.
+#
+# Die Grenze laeuft deshalb hier und nicht bei "hat einen Statuscode
+# geliefert": Ein 4xx bleibt eine Absage, die sich wiederholt, wenn man sie
+# wiederholt — dort ist der Parameter falsch, nicht der Zeitpunkt. Ein 5xx
+# traegt beim naechsten Versuch oft.
+#
+# Gemessen am 14.9.2026: Der naechtliche Live-Lauf (04:43 UTC) bekam von
+# api.sharedmobility.ch zweimal HTTP 500 auf /identify und wurde rot; dieselbe
+# URL, von Hand um 09:50 UTC abgefragt, antwortete mit 200 und 50 Fahrzeugen.
+# Nichts am Vertrag hatte sich bewegt — es gab nur keinen zweiten Versuch.
+#
+# 429 gehoert bewusst NICHT hierher: "du fragst zu viel" ist eine Auskunft,
+# und sie nach 0.5s zu wiederholen, ohne `Retry-After` zu lesen, macht genau
+# das Problem groesser, das sie meldet. Dafuer ist der Tuersteher zustaendig.
+RETRY_STATUS_CODES: frozenset[int] = frozenset({500, 502, 503, 504})
+
 
 # =============================================================================
 # Rate Limiter – Der Türsteher
@@ -262,6 +282,11 @@ class MobilityHTTPClient:
         Anschluss — man waehlt noch einmal. Eine Absage der Person am anderen
         Ende dagegen wiederholt sich, wenn man sie wiederholt.
 
+        Ein 5xx ist ein Besetztzeichen mit Statuscode und faellt deshalb unter
+        das Waehlen, nicht unter die Absage (`RETRY_STATUS_CODES`): Die Quelle
+        hat zwar geantwortet, aber nicht auf die gestellte Frage — sie hat ueber
+        ihr eigenes Scheitern berichtet. Ein 4xx bleibt die Absage, die sie ist.
+
         Der Tuersteher zaehlt den Aufruf einmal, nicht je Versuch: gezaehlt
         wird, was die Quelle Arbeit kostet, und ein Aufbau, der nie zustande
         kam, kostet sie keine. Wiederholt werden ohnehin nur Fehlschlaege —
@@ -295,6 +320,20 @@ class MobilityHTTPClient:
                     url,
                     e.response.text[:200],
                 )
+                # Ein 5xx ist ein Besetztzeichen mit Statuscode: noch einmal
+                # waehlen. Nur der letzte Versuch gibt auf — sonst schluckte
+                # die Schleife den Fehler und liefe unten in die Absage
+                # "Verbindung fehlgeschlagen", die den Status verschweigt.
+                if e.response.status_code in RETRY_STATUS_CODES and versuch < MAX_TRANSIENT_RETRIES:
+                    letzter = e
+                    logger.warning(
+                        "Versuch %s/%s zu %s mit HTTP %s beantwortet.",
+                        versuch + 1,
+                        MAX_TRANSIENT_RETRIES + 1,
+                        url,
+                        e.response.status_code,
+                    )
+                    continue
                 raise APIError(f"Die Datenquelle antwortete mit HTTP {e.response.status_code}.") from e
             except httpx.TimeoutException as e:
                 raise APIError(f"Timeout nach {REQUEST_TIMEOUT:.0f}s für {url}") from e

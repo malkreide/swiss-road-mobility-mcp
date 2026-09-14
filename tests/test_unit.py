@@ -432,20 +432,75 @@ class TestVerbindungsabbruchWirdWiederholt:
         assert geschlafen == erwartet, f"gewartet wurde {geschlafen}, erwartet war {erwartet}"
 
     @respx.mock
-    async def test_ein_statuscode_wird_nicht_wiederholt(self, monkeypatch, client):
-        """Gegenprobe: Die Quelle hat geantwortet — dreimal fragen aendert daran nichts.
+    async def test_ein_4xx_wird_nicht_wiederholt(self, monkeypatch, client):
+        """Gegenprobe: Die Quelle hat auf die Frage geantwortet — dreimal fragen aendert daran nichts.
 
-        Faellt dieser Test, laeuft der Retry ueber Antworten statt ueber ihr
+        Bei einem 4xx ist der Parameter falsch, nicht der Zeitpunkt. Faellt
+        dieser Test, laeuft der Retry ueber Antworten statt ueber ihr
         Ausbleiben und holt jede Absage dreifach ein.
         """
         self._ohne_warten(monkeypatch)
-        route = respx.get(self.URL).respond(500, text="boom")
+        route = respx.get(self.URL).respond(400, text="lotId fehlt")
 
         with pytest.raises(APIError) as fehler:
             await client.get_json(self.URL, use_cache=False)
 
-        assert route.call_count == 1, f"ein HTTP 500 wurde {route.call_count}-mal abgeholt"
-        assert "500" in str(fehler.value)
+        assert route.call_count == 1, f"ein HTTP 400 wurde {route.call_count}-mal abgeholt"
+        assert "400" in str(fehler.value)
+
+    @respx.mock
+    async def test_ein_429_wird_nicht_wiederholt(self, monkeypatch, client):
+        """Auch das ist eine Auskunft: "du fragst zu viel" beantwortet man nicht mit Nachfragen.
+
+        Steht die 429 erst einmal in `RETRY_STATUS_CODES`, macht der Server
+        genau das Problem groesser, das die Quelle ihm gerade meldet.
+        """
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).respond(429, text="slow down")
+
+        with pytest.raises(APIError) as fehler:
+            await client.get_json(self.URL, use_cache=False)
+
+        assert route.call_count == 1, f"ein HTTP 429 wurde {route.call_count}-mal abgeholt"
+        assert "429" in str(fehler.value)
+
+    @respx.mock
+    async def test_ein_5xx_wird_wiederholt_und_die_daten_kommen(self, monkeypatch, client):
+        """Der Fall vom 14.9.2026: api.sharedmobility.ch antwortete mit 500, kurz darauf mit 200.
+
+        Ein 5xx ist ein Besetztzeichen mit Statuscode — die Quelle hat nicht
+        auf die gestellte Frage geantwortet, sondern ueber ihr eigenes
+        Scheitern berichtet. Faellt dieser Test, reicht wieder ein einzelner
+        Zappler der Quelle, um den Anrufer leer ausgehen zu lassen.
+        """
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).mock(
+            side_effect=[httpx.Response(500, text="boom"), httpx.Response(200, json={"features": [1]})]
+        )
+
+        ergebnis = await client.get_json(self.URL, use_cache=False)
+
+        assert ergebnis == {"features": [1]}
+        assert route.call_count == 2, "der zweite Versuch fand gar nicht statt"
+
+    @respx.mock
+    async def test_ein_dauerhaftes_5xx_sagt_ab_und_nennt_den_status(self, monkeypatch, client):
+        """Wiederholt wird begrenzt — und die Absage nennt weiter den Status.
+
+        Die Gefahr beim Wiederholen im `except`-Zweig: Der Fehler wird
+        geschluckt und die Schleife laeuft unten in die allgemeine
+        Verbindungsabsage, die "500" nicht mehr enthaelt. Dann steht im Issue
+        "Verbindung fehlgeschlagen", wo "HTTP 500" stehen muesste.
+        """
+        self._ohne_warten(monkeypatch)
+        route = respx.get(self.URL).respond(503, text="boom")
+
+        with pytest.raises(APIError) as fehler:
+            await client.get_json(self.URL, use_cache=False)
+
+        versuche = api_infrastructure.MAX_TRANSIENT_RETRIES + 1
+        assert route.call_count == versuche, f"{route.call_count} Versuche statt {versuche}"
+        assert "503" in str(fehler.value), f"die Absage verschweigt den Status: {fehler.value}"
 
     @respx.mock
     async def test_ein_timeout_wird_nicht_wiederholt(self, monkeypatch, client):
