@@ -7,7 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Streamable HTTP als Transport (`MCP_TRANSPORT=http`) — der Weg zu Spec
+  `2026-07-28`.** Der Server bedient die moderne Revision jetzt auf dem Draht
+  und nicht nur laut Konstante. Endpunkt `/mcp`; die SSE-Routen (`/sse`,
+  `/messages/`) laufen **daneben** weiter, statt abgelöst zu werden, damit kein
+  bestehender Client wegbricht. Dieselbe Härtung wie der SSE-Pfad: CORS →
+  RateLimit → BearerAuth, jetzt aus der gemeinsamen Quelle `_harden` statt aus
+  einer Kopie je Transport.
+
+  `Dockerfile`, `docker-compose.yml` und `render.yaml` fahren `http`. `sse`
+  bleibt wählbar und unverändert.
+
+- **`tests/test_spec_2026_07_28.py`** — 13 Zusicherungen, die eine echte
+  HTTP-Anfrage gegen die zusammengebaute App fahren, statt Konstanten zu lesen.
+
 ### Behoben
+
+- **Der ausgelieferte Transport konnte `2026-07-28` gar nicht.** Beide READMEs
+  sagten, der Server bediene «zwei Protokoll-Aeren über denselben Endpunkt».
+  Das stimmte nicht, und nichts konnte es bemerken: die moderne
+  Einzelaustausch-Zustellung (`mcp/server/_streamable_http_modern.py`) hängt an
+  `StreamableHTTPSessionManager.handle_request` und ist nur über
+  `streamable_http_app` erreichbar. Ausgeliefert wurde `sse_app`.
+
+  Gemessen am 18.9.2026, derselbe `tools/list`-Umschlag mit
+  `io.modelcontextprotocol/protocolVersion: 2026-07-28`:
+
+  ```
+  POST /messages/  (SSE)              -> HTTP 400  «session_id is required»
+  POST /mcp        (Streamable HTTP)  -> HTTP 200  15 Tools, resultType=complete
+  ```
+
+  Die SSE-Antwort ist kein Konfigurationsfehler: eine moderne Anfrage ist
+  sessionlos und in sich geschlossen, der Transport verlangt eine Session. Die
+  Aera ist ihm strukturell nicht zugänglich.
+
+- **Die `cache_hints` (SEP-2549) kamen nie beim Client an.** `ttlMs` und
+  `cacheScope` sind Felder der *modernen* Antwort — konfiguriert waren sie seit
+  je, erzeugen konnte sie der ausgelieferte Transport nicht.
+  `tests/test_cache_hints.py` prüft die Konfiguration und konnte das deshalb
+  nicht sehen. Jetzt auf dem Draht nachgewiesen (`ttlMs: 300000`,
+  `cacheScope: public`), mit `resources/read` als Negativkontrolle: nicht
+  konfiguriert heisst `ttlMs: 0` / `cacheScope: private`, also «sofort veraltet,
+  nie geteilt» und eben nicht neutral.
+
+- **`serverInfo` meldete `version: ""` — bei jedem Aufruf.** Bei `2026-07-28`
+  reitet `serverInfo` im `_meta` jeder Antwort, nicht mehr nur im
+  `initialize`-Ergebnis. `MCPServer(version=...)` hat als SDK-Default den leeren
+  String, und gesetzt wurde er nie. Jetzt `version=__version__` aus den
+  Distributionsmetadaten — kein Literal, `scripts/check_version_sync.py` bleibt
+  erfüllt.
+
+- **SEP-2577: fünf Aufrufe einer abgekündigten Fähigkeit entfernt.**
+  `2026-07-28` kündigt Logging, Sampling und Roots ab; der Server rief
+  `ctx.info` fünfmal. Das war nicht nur ein Warnhinweis: bei dieser Revision ist
+  die Zustellung ein Opt-in pro Anfrage
+  (`io.modelcontextprotocol/logLevel`), und fehlt der Schlüssel, **darf** der
+  Server nichts senden (`connection.py::allowed_log_levels`). Die Zeilen waren
+  also wirkungslos und trugen die Meldung trotzdem. Ersetzt durch
+  serverseitiges `logger.info` — die Zählwerte standen ohnehin im
+  Werkzeugergebnis. `ctx.report_progress` bleibt: Server→Client-Progress ist
+  **nicht** abgekündigt, nur der Client→Server-Weg.
+
+### Geändert
 
 - **`.env.example` behauptete weiter den Wildcard-Default.** Die Umstellung auf
   fail-closed korrigierte `README.md` und `README.de.md`, übersah aber diese

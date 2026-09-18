@@ -86,8 +86,9 @@ swiss-road-mobility-mcp
 # oder:
 python -m swiss_road_mobility_mcp.server
 
-# SSE (für Cloud / Render.com)
-MCP_TRANSPORT=sse MCP_PORT=8001 swiss-road-mobility-mcp
+# Streamable HTTP (für Cloud / Render.com) — bedient MCP 2026-07-28 unter /mcp
+# und behält die SSE-Routen daneben.
+MCP_TRANSPORT=http MCP_PORT=8001 swiss-road-mobility-mcp
 ```
 
 Sofort in Claude Desktop ausprobieren:
@@ -149,8 +150,10 @@ Für den Einsatz via **claude.ai im Browser** (z.B. auf verwalteten Arbeitsplät
 **Render.com (empfohlen):**
 1. Repository auf GitHub pushen/forken
 2. Auf [render.com](https://render.com): New Web Service -> GitHub-Repo verbinden
-3. Start-Befehl setzen: `MCP_TRANSPORT=sse MCP_PORT=8001 swiss-road-mobility-mcp`
-4. In claude.ai unter Settings -> MCP Servers eintragen: `https://your-app.onrender.com/sse`
+3. Start-Befehl setzen: `MCP_TRANSPORT=http MCP_PORT=8001 swiss-road-mobility-mcp`
+4. In claude.ai unter Settings -> MCP Servers eintragen:
+   `https://your-app.onrender.com/mcp` — oder `.../sse` für einen Client, der
+   noch den SSE-Transport spricht; `http` bedient beides.
 
 > **`ALLOWED_ORIGINS` setzen, sonst lässt der Server keinen Browser durch.**
 > Kommaseparierte CORS-Origins, standardmässig leer — nicht gesetzt heisst kein
@@ -301,21 +304,40 @@ swiss-road-mobility-mcp/
 
 ## MCP-Protokollversion
 
-Dieser Server bedient **zwei Protokoll-Aeren** ueber denselben Endpunkt. Die
-erste Anfrage einer Verbindung entscheidet, welche gilt; ein spaeterer Anspruch
-aus der jeweils anderen Aera wird abgewiesen.
+Dieser Server bedient **zwei Protokoll-Aeren**. Die erste Anfrage einer
+Verbindung entscheidet, welche gilt; ein spaeterer Anspruch aus der jeweils
+anderen Aera wird abgewiesen.
 
 | Aera | Revision | Wer sie erreicht |
 |---|---|---|
 | `initialize`-Handshake | `2024-11-05` … **`2025-11-25`** | Was heutige Clients sprechen. Der Server antwortet mit der angefragten Revision — oder mit der Obergrenze `2025-11-25`, wenn die Anfrage etwas Neueres verlangt. |
 | Pro-Request-Envelope | **`2026-07-28`** | Eine Anfrage mit dem `2026-07-28`-`_meta`-Envelope oeffnet eine moderne Verbindung. |
 
+**Welche Aera gilt, haengt am Transport und nicht nur an der Anfrage.** Eine
+fruehere Fassung dieses Abschnitts sagte «ueber denselben Endpunkt» — das war
+falsch, und nichts hat es bemerkt: die moderne Einzelaustausch-Zustellung liegt
+hinter `StreamableHTTPSessionManager` und ist nur ueber die Streamable-HTTP-App
+erreichbar. Ausgeliefert wurde SSE, und SSE verlangt eine Session, waehrend eine
+moderne Anfrage gerade sessionlos ist.
+
+| `MCP_TRANSPORT` | Endpunkt | Handshake-Aera | `2026-07-28` |
+|---|---|---|---|
+| `stdio` (Default) | – | ja | ja |
+| `http` | `/mcp`, daneben `/sse` + `/messages/` | ja | **ja** |
+| `sse` (Alt-Aera) | `/sse` + `/messages/` | ja | nein |
+
+`MCP_TRANSPORT=http` bedient beides: die SSE-Routen laufen neben `/mcp` weiter,
+statt abgeloest zu werden — ein bestehender Client bricht also nicht weg, nur
+weil der Server eine Revision dazugewonnen hat. Die Container (`Dockerfile`,
+`docker-compose.yml`, `render.yaml`) fahren `http`.
+
 Beide Revisionen sind in
 [`tests/test_protocol_version.py`](tests/test_protocol_version.py) gepinnt und
 werden gegen das installierte SDK geprueft; ein Dependabot-Bump von `mcp` kann
-also keine der beiden still verschieben. Dieser Server baut keine ASGI-App, durch die sich ein `initialize`
-schicken liesse; das Gate sichert deshalb die SDK-Konstanten statt einer
-gemessenen Antwort — die schwaechere Form, benannt statt verschwiegen.
+also keine der beiden still verschieben. Weil dieses Gate nur SDK-Konstanten
+lesen kann, steht [`tests/test_spec_2026_07_28.py`](tests/test_spec_2026_07_28.py)
+daneben und misst den Draht: ein echter `2026-07-28`-Umschlag gegen die
+zusammengebaute ASGI-App, mit derselben Anfrage gegen SSE als Gegenprobe.
 
 Zu beachten: `LATEST_PROTOCOL_VERSION` im SDK ist ein Alias auf die **moderne**
 Aera, nicht auf die Handshake-Aera — wer nur dagegen pinnt, laesst genau die

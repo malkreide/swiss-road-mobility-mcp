@@ -86,8 +86,9 @@ swiss-road-mobility-mcp
 # or:
 python -m swiss_road_mobility_mcp.server
 
-# SSE (for cloud / Render.com)
-MCP_TRANSPORT=sse MCP_PORT=8001 swiss-road-mobility-mcp
+# Streamable HTTP (for cloud / Render.com) — serves MCP 2026-07-28 at /mcp
+# and keeps the legacy SSE routes alongside.
+MCP_TRANSPORT=http MCP_PORT=8001 swiss-road-mobility-mcp
 ```
 
 Try it immediately in Claude Desktop:
@@ -149,8 +150,10 @@ For use via **claude.ai in the browser** (e.g. on managed workstations without l
 **Render.com (recommended):**
 1. Push/fork the repository to GitHub
 2. On [render.com](https://render.com): New Web Service -> connect GitHub repo
-3. Set start command: `MCP_TRANSPORT=sse MCP_PORT=8001 swiss-road-mobility-mcp`
-4. In claude.ai under Settings -> MCP Servers, add: `https://your-app.onrender.com/sse`
+3. Set start command: `MCP_TRANSPORT=http MCP_PORT=8001 swiss-road-mobility-mcp`
+4. In claude.ai under Settings -> MCP Servers, add `https://your-app.onrender.com/mcp`
+   — or `.../sse` for a client that still speaks the SSE transport; `http`
+   serves both.
 
 #### SSE security (SEC-009)
 
@@ -324,21 +327,40 @@ swiss-road-mobility-mcp/
 
 ## MCP Protocol Version
 
-This server speaks **two protocol eras** over the same endpoint. The client's
-first request on a connection decides which one applies; a later claim from the
-other era is refused.
+This server speaks **two protocol eras**. The client's first request on a
+connection decides which one applies; a later claim from the other era is
+refused.
 
 | Era | Revision | Who reaches it |
 |---|---|---|
 | `initialize` handshake | `2024-11-05` … **`2025-11-25`** | What today's clients speak. The server answers with the revision asked for, or with the `2025-11-25` ceiling when the request asks for something newer. |
 | Per-request envelope | **`2026-07-28`** | A request carrying the `2026-07-28` `_meta` envelope opens a modern connection. |
 
+**The era depends on the transport, not only on the request.** An earlier
+version of this section said "over the same endpoint", and that was wrong in a
+way nothing caught: the modern single-exchange delivery lives behind
+`StreamableHTTPSessionManager`, which only the Streamable HTTP app reaches.
+The shipped transport was SSE, and SSE requires a session while a modern
+request is session-less by construction.
+
+| `MCP_TRANSPORT` | Endpoint | Handshake era | `2026-07-28` |
+|---|---|---|---|
+| `stdio` (default) | – | yes | yes |
+| `http` | `/mcp`, plus `/sse` + `/messages/` alongside | yes | **yes** |
+| `sse` (legacy) | `/sse` + `/messages/` | yes | no |
+
+`MCP_TRANSPORT=http` serves both: the SSE routes run next to `/mcp` rather than
+being replaced, so an existing client does not break because the server gained
+a revision. Containers (`Dockerfile`, `docker-compose.yml`, `render.yaml`) ship
+`http`.
+
 Both revisions are pinned in
 [`tests/test_protocol_version.py`](tests/test_protocol_version.py) and asserted
 against the installed SDK, so a Dependabot bump of `mcp` cannot move either one
-silently. This server builds no ASGI app to send an `initialize` through, so
-the gate asserts the SDK constants rather than a measured response — the
-weaker form, named rather than left unsaid.
+silently. Since that gate can only read SDK constants,
+[`tests/test_spec_2026_07_28.py`](tests/test_spec_2026_07_28.py) sits next to it
+and measures the wire instead: a real `2026-07-28` envelope against the
+assembled ASGI app, with the same envelope against SSE as the counter-control.
 
 Note that the SDK's `LATEST_PROTOCOL_VERSION` is an alias for the **modern**
 era, not for the handshake era — pinning against it alone would leave the era

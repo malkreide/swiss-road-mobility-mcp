@@ -28,10 +28,17 @@ Nachgemessen statt aus Konstantennamen geschlossen: die Aushandlung steht in
 
 — sie haengt an keinem Transport, gilt also fuer stdio ebenso wie fuer HTTP.
 
-Ohne gemessenen Teil: dieses Repo baut keine ASGI-App, durch die sich ein
-`initialize` schicken liesse. Die Zusicherungen unten haengen deshalb an den
-SDK-Konstanten. Das ist die schwaechere Form, und sie steht hier benannt statt
-unausgesprochen.
+Die Zusicherungen unten haengen an den SDK-Konstanten — die schwaechere Form,
+hier benannt statt unausgesprochen. Der gemessene Teil steht seit dem 18.9.2026
+daneben in `test_spec_2026_07_28.py`: dort faehrt ein echter
+`2026-07-28`-Umschlag durch die zusammengebaute ASGI-App.
+
+Ein frueherer Stand dieses Absatzes begruendete das Fehlen damit, dass das Repo
+«keine ASGI-App baut». Das stimmte schon damals nicht — `build_sse_app` gab es
+bereits. Richtig war nur die Folgerung, und zwar aus einem anderen Grund, als
+hier stand: durch die SSE-App laesst sich die moderne Aera nicht schicken, weil
+der Transport eine Session verlangt. Eine Begruendung, die auf den falschen
+Umstand zeigt, haelt die Luecke laenger offen als gar keine.
 """
 
 from __future__ import annotations

@@ -13,8 +13,12 @@ This module provides two **pure ASGI** middlewares (deliberately NOT Starlette
   - ``RateLimitMiddleware``   — per-client-IP sliding-window limiter.
 
 Both are configured from the environment (see ``middleware_config``) and are
-wired into the SSE app by ``server._run_sse``. They are independently unit
-tested with Starlette's ``TestClient`` (no ``mcp`` import required).
+wired into every HTTP transport by ``server._harden`` — the Streamable HTTP app
+(``MCP_TRANSPORT=http``) as well as the SSE one. That shared helper is the
+point: while the stack lived inside ``build_sse_app``, a second transport would
+have had to copy it, and a copy that forgets a layer looks exactly like one that
+does not. They are independently unit tested with Starlette's ``TestClient``
+(no ``mcp`` import required).
 """
 
 from __future__ import annotations
