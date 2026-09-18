@@ -104,6 +104,13 @@ CACHE_HINTS: dict[CacheableMethod, CacheHint] = {
 
 mcp = MCPServer(
     "swiss_road_mobility_mcp",
+    # Spec 2026-07-28 legt `serverInfo` in das `_meta` JEDER Antwort, nicht mehr
+    # nur in das `initialize`-Ergebnis. Der SDK-Default ist der leere String —
+    # der Server nannte sich also auf dem modernen Draht mit `version: ""`, und
+    # zwar bei jedem Aufruf. Kein Literal hier: `__version__` kommt aus den
+    # Distributionsmetadaten, `scripts/check_version_sync.py` verbietet die
+    # hartkodierte Zweitschrift.
+    version=__version__,
     cache_hints=CACHE_HINTS,
     instructions=(
         "Swiss road and mobility data server with 15 tools (Phase 1 + Phase 2 + Phase 3 + Phase 4). "
@@ -475,7 +482,12 @@ async def road_find_charger(params: FindChargerInput, ctx: Context) -> dict[str,
         charging power (kW), and operator information.
     """
     try:
-        await ctx.info(f"Searching EV chargers within {params.radius_km} km of ({params.latitude}, {params.longitude})")
+        logger.info(
+            "road_find_charger: %s km around (%s, %s)",
+            params.radius_km,
+            params.latitude,
+            params.longitude,
+        )
 
         async def _progress(done: float, total: float, message: str) -> None:
             await ctx.report_progress(progress=done, total=total, message=message)
@@ -490,7 +502,7 @@ async def road_find_charger(params: FindChargerInput, ctx: Context) -> dict[str,
             limit=params.limit,
             on_progress=_progress,
         )
-        await ctx.info(f"Found {result.get('total_found', 0)} charging stations")
+        logger.info("road_find_charger: %s charging stations found", result.get("total_found", 0))
         return result
     except APIError as e:
         return upstream_error(e)
@@ -601,7 +613,7 @@ async def road_check_status(ctx: Context) -> dict[str, Any]:
         },
     }
 
-    await ctx.info(f"Checking {len(checks)} data-source endpoints")
+    logger.info("road_check_status: checking %s data-source endpoints", len(checks))
     results = {}
     async with async_client(timeout=10.0) as test_client:
         for idx, (name, info) in enumerate(checks.items(), start=1):
@@ -1248,9 +1260,10 @@ async def road_mobility_snapshot(params: MobilitySnapshotInput, ctx: Context) ->
     """
     try:
         api_key = _get_api_key()
-        await ctx.info(
-            f"Aggregating mobility snapshot for ({params.latitude}, {params.longitude}) "
-            f"across shared mobility, EV charging, Park & Rail and rail"
+        logger.info(
+            "road_mobility_snapshot: aggregating (%s, %s) across sharing, EV, Park & Rail and rail",
+            params.latitude,
+            params.longitude,
         )
         result = await multimodal.build_mobility_snapshot(
             latitude=params.latitude,
@@ -1319,9 +1332,11 @@ async def road_multimodal_plan(params: MultimodalPlanInput, ctx: Context) -> dic
         - last_mile_sharing: Sharing options at start location
     """
     try:
-        await ctx.info(
-            f"Planning multimodal trip from ({params.start_latitude}, "
-            f"{params.start_longitude}) to {params.destination!r}"
+        logger.info(
+            "road_multimodal_plan: (%s, %s) -> %r",
+            params.start_latitude,
+            params.start_longitude,
+            params.destination,
         )
         result = await multimodal.plan_multimodal_trip(
             start_latitude=params.start_latitude,
@@ -1688,12 +1703,12 @@ def main():
 
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
 
-    if transport == "sse":
+    if transport in ("sse", "http"):
         # SEC-016: Default auf 127.0.0.1 (localhost only). Das Binden an alle
         # Interfaces (0.0.0.0) gehört ausschliesslich in den Container-Kontext
         # (Dockerfile / render.yaml setzen MCP_HOST=0.0.0.0 explizit). Ein
-        # 0.0.0.0-Default im Code würde einen lokal gestarteten SSE-Server für
-        # das gesamte Subnetz erreichbar machen (NeighborJack).
+        # 0.0.0.0-Default im Code würde einen lokal gestarteten HTTP- oder
+        # SSE-Server für das gesamte Subnetz erreichbar machen (NeighborJack).
         host = os.environ.get("MCP_HOST", "127.0.0.1")
         port = int(os.environ.get("MCP_PORT", "8001"))
         if host in ("0.0.0.0", "::") and not _in_container():
@@ -1703,8 +1718,12 @@ def main():
                 "MCP_HOST=127.0.0.1 for local development.",
                 host,
             )
-        logger.info(f"Starting SSE server on {host}:{port}")
-        _run_sse(host, port)
+        if transport == "http":
+            logger.info("Starting Streamable HTTP server on %s:%s (MCP 2026-07-28 at /mcp)", host, port)
+            _run_http(host, port)
+        else:
+            logger.info(f"Starting SSE server on {host}:{port}")
+            _run_sse(host, port)
     else:
         logger.info("Starting stdio server")
         mcp.run(transport="stdio")
@@ -1791,15 +1810,7 @@ def _run_sse(host: str, port: int) -> None:
     to the plain MCPServer SSE runner if the app/middleware wiring is unavailable
     (e.g. a future SDK API change), so SSE never silently breaks.
     """
-    cfg = middleware_config()
-    if not cfg.auth_token:
-        logger.warning(
-            "MCP_AUTH_TOKEN is not set — the SSE endpoint is UNAUTHENTICATED and "
-            "reachable by anyone who can connect. Set MCP_AUTH_TOKEN to require a "
-            "Bearer token (SEC-009). Rate limiting (%s req / %ss per IP) stays active.",
-            cfg.rate_limit_max,
-            int(cfg.rate_limit_window),
-        )
+    _warn_if_unauthenticated("SSE")
     try:
         import uvicorn
 
@@ -1807,6 +1818,43 @@ def _run_sse(host: str, port: int) -> None:
     except Exception:
         logger.exception("Hardened SSE app unavailable; falling back to plain SSE")
         mcp.run(transport="sse", host=host, port=port)
+
+
+def _warn_if_unauthenticated(label: str) -> None:
+    """Ein unauthentifizierter Endpunkt wird benannt, egal welcher Transport.
+
+    Stand vorher nur im SSE-Pfad. Ein zweiter Transport haette die Warnung
+    stillschweigend nicht gehabt — und das Fehlen einer Warnung liest sich wie
+    ihr Ausbleiben aus gutem Grund.
+    """
+    cfg = middleware_config()
+    if cfg.auth_token:
+        return
+    logger.warning(
+        "MCP_AUTH_TOKEN is not set — the %s endpoint is UNAUTHENTICATED and "
+        "reachable by anyone who can connect. Set MCP_AUTH_TOKEN to require a "
+        "Bearer token (SEC-009). Rate limiting (%s req / %ss per IP) stays active.",
+        label,
+        cfg.rate_limit_max,
+        int(cfg.rate_limit_window),
+    )
+
+
+def _run_http(host: str, port: int) -> None:
+    """Start Streamable HTTP — der Transport, der Spec `2026-07-28` traegt.
+
+    Dieselbe Haertung wie der SSE-Pfad (`_harden`), und die SSE-Routen laufen
+    daneben weiter, damit bestehende Clients nicht wegbrechen.
+
+    Kein Rueckfall auf `mcp.run(transport=...)` wie bei SSE: ein Rueckfall
+    wuerde die Haertung abwerfen, und bei SSE ist er nur vertretbar, weil er
+    dort einen bestehenden Betrieb am Leben haelt. Hier gaebe es nichts zu
+    retten — ein Fehler beim Aufbau soll laut sein, nicht ungehaertet binden.
+    """
+    _warn_if_unauthenticated("Streamable HTTP")
+    import uvicorn
+
+    uvicorn.run(build_http_app(host, port), host=host, port=port)
 
 
 # Die Header, nach denen Spec 2026-07-28 eine Anfrage routet — in der
@@ -1817,17 +1865,38 @@ def _run_sse(host: str, port: int) -> None:
 CORS_ROUTING_HEADERS = ["Mcp-Method", "Mcp-Name", "Mcp-Protocol-Version"]
 
 
-def build_sse_app(host: str = "127.0.0.1", port: int = 8000):
-    """Baut die gehaertete SSE-App, ohne einen Socket zu binden.
+def _security_or_warn(host: str, port: int):
+    """Transportpruefung bauen und den nicht ableitbaren Fall benennen.
 
-    Herausgezogen aus `_run_sse`, damit die CORS-Schicht pruefbar ist: solange
-    Aufbau und `uvicorn.run` in derselben Funktion standen, liess sich die
-    Freigabeliste nur lesen, nicht ausprobieren — und eine gelesene Liste kann
-    vollstaendig aussehen und trotzdem nie an der Middleware ankommen.
+    Herausgezogen, damit SSE- und HTTP-Pfad dieselbe Pruefung benutzen. Zwei
+    Kopien derselben Warnung laufen auseinander, sobald nur eine angefasst wird
+    — und die stille Haelfte ist dann die, die in Produktion bindet.
+    """
+    security = build_transport_security(host, port)
+    if security is None:
+        logger.warning(
+            "DNS rebinding protection is OFF: the bind %s is not loopback and "
+            "MCP_ALLOWED_HOSTS is empty. Set it to the hostnames this server "
+            "is reachable under so Host and Origin are validated (SEC-005). "
+            "This is separate from MCP_AUTH_TOKEN — a rebinding attack "
+            "carries a valid token by construction.",
+            host,
+        )
+    return security
 
-    Die Reihenfolge der Middlewares bleibt unveraendert: `add_middleware`
-    stellt voran, die zuletzt angehaengte liegt also aussen. Gewuenschter
-    Anfragefluss CORS -> RateLimit -> BearerAuth -> App.
+
+def _harden(app):
+    """Legt CORS, Rate-Limit und BearerAuth um eine gebaute MCP-App.
+
+    Eine Quelle fuer beide Transporte. Als der Stapel nur in `build_sse_app`
+    stand, haette ein zweiter Transport ihn kopieren muessen — und eine Kopie,
+    die eine Schicht vergisst, sieht im Diff aus wie die andere.
+
+    Die Reihenfolge ist die Sache: `add_middleware` stellt voran, die zuletzt
+    angehaengte Schicht liegt also aussen. Gewuenscht CORS -> RateLimit ->
+    BearerAuth -> App, damit der Preflight beantwortet wird, bevor die
+    Auth-Schicht ihn abweist — ein Browser schickt auf `OPTIONS` kein
+    `Authorization` mit.
     """
     from starlette.middleware.cors import CORSMiddleware
 
@@ -1844,21 +1913,6 @@ def build_sse_app(host: str = "127.0.0.1", port: int = 8000):
             "stdio and non-browser clients are unaffected."
         )
     cfg = middleware_config()
-    security = build_transport_security(host, port)
-    if security is None:
-        logger.warning(
-            "DNS rebinding protection is OFF: the bind %s is not loopback and "
-            "MCP_ALLOWED_HOSTS is empty. Set it to the hostnames this server "
-            "is reachable under so Host and Origin are validated (SEC-005). "
-            "This is separate from MCP_AUTH_TOKEN — a rebinding attack "
-            "carries a valid token by construction.",
-            host,
-        )
-    # `host` is not cosmetic: the SDK derives its Host allow-list from it, so
-    # omitting it made a 0.0.0.0 deployment answer every request with 421.
-    app = mcp.sse_app(transport_security=security, host=host)
-    # add_middleware prepends, so the LAST added is outermost. Desired
-    # request flow: CORS -> RateLimit -> BearerAuth -> app.
     app.add_middleware(BearerAuthMiddleware, token=cfg.auth_token)
     app.add_middleware(
         RateLimitMiddleware,
@@ -1880,6 +1934,59 @@ def build_sse_app(host: str = "127.0.0.1", port: int = 8000):
     # OBS-006: outermost wrapper so server spans cover the full request and
     # W3C trace-context is extracted from inbound headers (no-op if tracing off).
     return instrument_asgi(app)
+
+
+def build_sse_app(host: str = "127.0.0.1", port: int = 8000):
+    """Baut die gehaertete SSE-App, ohne einen Socket zu binden.
+
+    Herausgezogen aus `_run_sse`, damit die CORS-Schicht pruefbar ist: solange
+    Aufbau und `uvicorn.run` in derselben Funktion standen, liess sich die
+    Freigabeliste nur lesen, nicht ausprobieren — und eine gelesene Liste kann
+    vollstaendig aussehen und trotzdem nie an der Middleware ankommen.
+
+    SSE ist die Alt-Aera. Sie kann `2026-07-28` nicht bedienen: der Transport
+    verlangt eine Session (`POST /messages/` ohne sie endet mit HTTP 400
+    «session_id is required»), waehrend eine moderne Anfrage gerade
+    sessionlos und in sich geschlossen ist. Wer die moderne Revision will,
+    nimmt `build_http_app`.
+    """
+    # `host` is not cosmetic: the SDK derives its Host allow-list from it, so
+    # omitting it made a 0.0.0.0 deployment answer every request with 421.
+    return _harden(mcp.sse_app(transport_security=_security_or_warn(host, port), host=host))
+
+
+def build_http_app(host: str = "127.0.0.1", port: int = 8000):
+    """Baut die gehaertete Streamable-HTTP-App — der Weg zu Spec `2026-07-28`.
+
+    Der `mcp`-2.x-Server bedient zwei Protokoll-Aeren, aber nicht ueber
+    denselben Transport: die moderne Einzelaustausch-Zustellung
+    (`mcp/server/_streamable_http_modern.py`) haengt an
+    `StreamableHTTPSessionManager.handle_request`, und dorthin fuehrt nur die
+    Streamable-HTTP-App. Die SSE-App erreicht sie nicht — gemessen, nicht
+    geschlossen: derselbe `tools/list`-Umschlag mit
+    `io.modelcontextprotocol/protocolVersion: 2026-07-28` bekommt auf
+    `/messages/` HTTP 400 «session_id is required» und auf `/mcp` HTTP 200 mit
+    `resultType: complete` und `cacheScope: public`.
+
+    Das ist der Grund, warum die `cache_hints` oben ueber HTTP bisher nirgends
+    ankamen: `ttlMs`/`cacheScope` (SEP-2549) sind Felder der modernen Antwort,
+    und die konnte der ausgelieferte Transport gar nicht erzeugen.
+
+    Beide Aeren in einer App: die SSE-Routen werden daneben gehaengt, statt sie
+    abzuloesen. Die Pfade kollidieren nicht (`/mcp` gegen `/sse` und
+    `/messages`), und ein bestehender Client bricht damit nicht weg, nur weil
+    der Server die neue Revision zusaetzlich kann.
+
+    Die Lifespan der Streamable-App bleibt die der zusammengesetzten App — sie
+    startet den Session-Manager. Ohne sie antwortet `/mcp` nicht; die
+    SSE-App bringt nur eine leere Default-Lifespan mit, weshalb die
+    Zusammensetzung in dieser Richtung erfolgen muss und nicht umgekehrt.
+    """
+    security = _security_or_warn(host, port)
+    app = mcp.streamable_http_app(transport_security=security, host=host)
+    legacy = mcp.sse_app(transport_security=security, host=host)
+    app.router.routes.extend(legacy.router.routes)
+    return _harden(app)
 
 
 if __name__ == "__main__":

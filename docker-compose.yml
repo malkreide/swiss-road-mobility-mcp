@@ -12,7 +12,7 @@ services:
     restart: unless-stopped            # SCALE-006: auto-recover from crash / OOM-kill
 
     environment:
-      MCP_TRANSPORT: sse
+      MCP_TRANSPORT: http
       MCP_HOST: "0.0.0.0"              # safe: the container network is isolated
       MCP_PORT: "8001"
       MCP_LOG_FORMAT: json

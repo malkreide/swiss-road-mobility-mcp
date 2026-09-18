@@ -24,7 +24,7 @@ COPY --from=builder /opt/venv /opt/venv
 
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    MCP_TRANSPORT=sse \
+    MCP_TRANSPORT=http \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8001
 
