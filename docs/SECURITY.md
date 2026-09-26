@@ -33,7 +33,7 @@ If a future phase introduces a higher-value secret, migrate to a secret manager
 - Direct dependencies are **major-pinned** in `pyproject.toml`
   (`mcp[cli]>=1.0.0,<2.0.0`, `httpx<1.0.0`, `pydantic<3.0.0`) so a breaking
   upstream release cannot silently enter (ARCH-012).
-- **Dependabot** (`.github/dependabot.yml`) proposes weekly updates for both pip
+- **Dependabot** (`.github/dependabot.yml`) proposes monthly, grouped updates for both pip
   and GitHub Actions; CI gates every bump.
 - **Hash-pinning** for fully reproducible installs is recommended for production
   deployments: generate a hashed lockfile (e.g. `pip-compile --generate-hashes`
