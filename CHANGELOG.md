@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-26
+
+Erste Fassung, die Spec `2026-07-28` tatsächlich bedient — bis hierher war der
+Server darauf gepinnt und dokumentiert, konnte die Revision über den
+ausgelieferten Transport aber nicht sprechen. Enthält ausserdem zwei
+Verschärfungen an der Browser-Schnittstelle, die vor dem Upgrade zu lesen sind.
+
+> **Upgrade-Hinweis.** Zwei Punkte brechen bestehende Konfigurationen:
+> `ALLOWED_ORIGINS` ist jetzt fail-closed — nicht gesetzt heisst **kein**
+> Cross-Origin-Zugriff, wo vorher ungefragt jede Website durchkam (wer den
+> alten Zustand will, setzt `ALLOWED_ORIGINS=*`; für claude.ai im Browser
+> `ALLOWED_ORIGINS=https://claude.ai`). Und der empfohlene HTTP-Endpunkt ist
+> neu `/mcp` statt `/sse`; die SSE-Routen bleiben erreichbar, die Container
+> fahren aber `MCP_TRANSPORT=http`. stdio-Clients sind von beidem unberührt.
+
 ### Hinzugefügt
 
 - **Streamable HTTP als Transport (`MCP_TRANSPORT=http`) — der Weg zu Spec
