@@ -65,6 +65,23 @@ def schluesselverzeichnis() -> dict[str, str]:
     return verzeichnis
 
 
+@lru_cache(maxsize=1)
+def statusverzeichnis() -> dict[str, int]:
+    """Dateiname → HTTP-Status, gelesen aus PROVENANCE.md; ohne Angabe 200."""
+    verzeichnis: dict[str, int] = {}
+    datei: str | None = None
+    for zeile in provenance().splitlines():
+        kopf = re.match(r"## `([^`]+)`", zeile)
+        if kopf:
+            datei = kopf.group(1)
+            verzeichnis[datei] = 200
+            continue
+        eintrag = re.match(r"- \*\*Status:\*\* (\d{3})$", zeile)
+        if eintrag and datei:
+            verzeichnis[datei] = int(eintrag.group(1))
+    return verzeichnis
+
+
 def fixture_text(name: str) -> str:
     """Die Aufzeichnung als Text — so, wie sie ueber die Leitung kaeme."""
     pfad = FIXTURES / name

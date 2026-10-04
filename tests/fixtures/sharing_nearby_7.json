@@ -1,0 +1,94 @@
+[
+  {
+    "geometry": {
+      "x": 7.4377,
+      "y": 46.9495,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "mobility",
+      "provider_name": "Mobility",
+      "provider_timezone": "CET",
+      "id": "mobility:70025",
+      "available": true,
+      "pickup_type": "station_based",
+      "station_name": "Bern Bahnhof",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 7,
+      "station_region_id": "mobility:null",
+      "vehicle_type": [
+        "Car",
+        "Car",
+        "Car"
+      ]
+    },
+    "featureId": "mobility:70025",
+    "id": "mobility:70025",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.4341164,
+      "y": 46.95137,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "edrivecarsharing",
+      "provider_name": "edrive carsharing AG",
+      "provider_timezone": "CET",
+      "id": "edrivecarsharing:2036",
+      "available": true,
+      "pickup_type": "station_based",
+      "station_name": "Bern, Erlachstrasse",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 1,
+      "station_region_id": "edrivecarsharing:null",
+      "vehicle_type": [
+        "E-Car"
+      ]
+    },
+    "featureId": "edrivecarsharing:2036",
+    "id": "edrivecarsharing:2036",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.4341273,
+      "y": 46.951416,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "edrivecarsharing",
+      "provider_name": "edrive carsharing AG",
+      "provider_timezone": "CET",
+      "id": "edrivecarsharing:2523",
+      "available": true,
+      "pickup_type": "station_based",
+      "station_name": "Bern, Erlachstrasse",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 1,
+      "station_region_id": "edrivecarsharing:null",
+      "vehicle_type": [
+        "E-Car"
+      ]
+    },
+    "featureId": "edrivecarsharing:2523",
+    "id": "edrivecarsharing:2523",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  }
+]

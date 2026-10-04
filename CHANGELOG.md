@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Behoben
+
+- **`road_find_sharing` ohne Fahrzeugtyp lieferte nur noch HTTP 500** — und mit
+  ihm verloren `road_mobility_snapshot` und `road_multimodal_plan` still ihre
+  Sharing-Angaben. Ursache liegt bei der Quelle: `api.sharedmobility.ch`
+  scheitert seit spätestens 1.10.2026 auf `/identify` ohne `vehicle_type`
+  landesweit (gemessen am 4.10.2026 in Zürich, Bern, Winterthur, Lausanne,
+  Basel), mit jedem einzelnen Typ antwortet sie mit 200. Der Server fragt bei
+  genau diesem Befund (HTTP 500, kein Typ gewählt) jetzt je Typ einzeln ab,
+  führt zusammen, ordnet nach Distanz und weist das Ergebnis unter
+  `completeness` ausdrücklich als **unvollständig** aus — mit den Typen, die
+  fehlen («Other» ist bei der Quelle gar nicht abfragbar, andere scheitern je
+  nach Ort). Ein 502/503/504 löst keinen Ausweg aus.
+- **Die Beschreibung von `vehicle_type` nannte Werte, die die Quelle nicht
+  kennt.** «Bicycle» und «Cargo-Bicycle» beantwortet sie still mit `[]`; ein
+  Modell, das der Beschreibung folgte, meldete «keine Velos» an Orten voller
+  Velos. Jetzt stehen dort die Schreibweisen der Quelle (`Bike`, `CargoBike`,
+  `E-CargoBike` …), und ein Test hält Beschreibung und Abfrageliste gleich.
+
+### Geändert
+
+- `APIError` trägt `status_code`, wenn die Quelle einen geliefert hat.
+- Der Fixture-Recorder zeichnet den HTTP-Status mit auf und spielt ihn ab;
+  bisher wäre ein aufgezeichneter 500 als 200 wiedergegeben worden. Leere
+  Antworten der Quelle stehen ausgewiesen im Nachweis. Fixtures neu
+  aufgezeichnet am 4.10.2026.
+
 ## [0.6.0] - 2026-09-26
 
 Erste Fassung, die Spec `2026-07-28` tatsächlich bedient — bis hierher war der

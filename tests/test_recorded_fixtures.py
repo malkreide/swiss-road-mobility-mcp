@@ -38,9 +38,10 @@ from fixture_data import (
     recorded_names,
     recorder,
     schluesselverzeichnis,
+    statusverzeichnis,
 )
 
-from swiss_road_mobility_mcp import server
+from swiss_road_mobility_mcp import api_infrastructure, server
 
 BERN = {"latitude": 46.9490, "longitude": 7.4396}
 
@@ -80,7 +81,7 @@ class _StillerKontext:
 
 
 @pytest.fixture
-def quelle():
+def quelle(monkeypatch):
     """Beantwortet jede Anfrage aus ihrer eigenen Aufzeichnung und protokolliert mit.
 
     Nach der *Anfrage* zugeordnet, nicht nach der Reihenfolge. `respx` faengt
@@ -89,7 +90,14 @@ def quelle():
     """
     protokoll: list[httpx.Request] = []
     verzeichnis = schluesselverzeichnis()
+    status = statusverzeichnis()
     server._client = None  # der gepoolte Client wird sonst zwischen Tests geteilt
+
+    # Ein aufgezeichneter 5xx wird wiederholt, wie im Betrieb — ohne die Pause.
+    # Ueber den Modul-Alias, nicht ueber `api_infrastructure.asyncio`.
+    async def _kein_schlaf(sekunden: float) -> None: ...
+
+    monkeypatch.setattr(api_infrastructure, "_sleep", _kein_schlaf)
 
     def antwort(request: httpx.Request) -> httpx.Response:
         protokoll.append(request)
@@ -99,7 +107,7 @@ def quelle():
                 f"keine Aufzeichnung fuer diese Anfrage:\n  {request.url}\n"
                 "Neu aufzeichnen mit `PYTHONPATH=src python scripts/record_fixtures.py`."
             )
-        return httpx.Response(200, text=fixture_text(name))
+        return httpx.Response(status[name], text=fixture_text(name))
 
     with respx.mock:
         respx.route().mock(side_effect=antwort)
@@ -181,9 +189,21 @@ def test_der_nachweis_meldet_was_gekuerzt_wurde():
 
 @pytest.mark.parametrize("name", sorted(recorded_names()))
 def test_keine_aufzeichnung_ist_leer(name):
-    """Eine leere Antwort sieht aus wie eine gueltige und prueft nichts."""
+    """Eine leere Antwort sieht aus wie eine gueltige und prueft nichts.
+
+    Zwei Ausnahmen, beide im Nachweis ausgewiesen und nicht still: ein
+    aufgezeichneter Fehler (dort *ist* der Status die Antwort) und ein `[]`,
+    das die Quelle so geliefert hat.
+    """
+    if statusverzeichnis()[name] != 200:
+        assert fixture_text(name).strip(), f"{name}: Fehlerantwort ohne Koerper"
+        return
     daten = fixture_json(name)
     if isinstance(daten, list):
+        block = provenance().split(f"## `{name}`", 1)[1].split("## ", 1)[0]
+        if "leer, wie geliefert" in block:
+            assert daten == [], f"{name} ist als leer ausgewiesen und ist es nicht"
+            return
         assert daten, f"{name} ist eine leere Liste"
         return
     listen = [v for v in daten.values() if isinstance(v, list)]
@@ -261,11 +281,42 @@ async def test_die_sharing_antwort_ist_eine_liste_ohne_umschlag(quelle):
 
     Ein Loader, der ueberall `results` erwartet, liefert hier still nichts.
     """
-    assert isinstance(fixture_json("sharing_nearby_1.json"), list)
+    umkreis = [n for n, st in statusverzeichnis().items() if n.startswith("sharing_nearby_") and st == 200]
+    assert umkreis, "keine einzige Umkreissuche mit 200 aufgezeichnet"
+    assert all(isinstance(fixture_json(n), list) for n in umkreis), umkreis
     assert "results" in fixture_json("geocode_1.json")
     ergebnis = await _fahre("sharing_nearby")
     assert ergebnis["vehicles"], list(ergebnis)[:6]
     assert ergebnis["count"] == len(ergebnis["vehicles"])
+
+
+async def test_die_umkreissuche_folgt_der_aufgezeichneten_quelle(quelle):
+    """Beide Zweige, je nachdem, was die Quelle beim Aufzeichnen tat.
+
+    Am 4.10.2026 antwortete sie auf `/identify` ohne Fahrzeugtyp mit HTTP 500
+    und mit jedem einzelnen Typ mit 200. Ist das so aufgezeichnet, muss der
+    Server je Typ fragen und die Luecke melden; antwortet sie wieder ganz,
+    darf er nichts zusammensetzen. Ein Test, der nur den heutigen Zweig kennt,
+    prueft den Tag.
+    """
+    ergebnis = await _fahre("sharing_nearby")
+    ohne_typ = [r for r in quelle if not r.url.params.get_list("filters")]
+    assert ohne_typ, "die Abfrage ohne Fahrzeugtyp ging nicht raus"
+    name = schluesselverzeichnis()[str(ohne_typ[0].url)]
+    if statusverzeichnis()[name] == 500:
+        assert ergebnis["completeness"]["complete"] is False, list(ergebnis)
+        je_typ = {str(r.url) for r in quelle if r.url.params.get_list("filters")}
+        vollst = ergebnis["completeness"]
+        versucht = [*vollst["queried_vehicle_types"], *vollst.get("failed_vehicle_types", {})]
+        assert len(je_typ) == len(versucht), (je_typ, versucht)
+        # Was die Aufzeichnung als Fehlschlag fuehrt, muss das Ergebnis nennen.
+        for url in je_typ:
+            if statusverzeichnis()[schluesselverzeichnis()[url]] != 200:
+                typ = httpx.URL(url).params.get_list("filters")[0].split("=", 1)[1]
+                assert typ in vollst.get("failed_vehicle_types", {}), (typ, vollst)
+    else:
+        assert "completeness" not in ergebnis
+        assert len(quelle) == 1
 
 
 async def test_der_schnappschuss_fragt_mehrere_quellen(quelle):

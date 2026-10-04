@@ -35,53 +35,64 @@
   },
   {
     "geometry": {
-      "x": 7.440534,
-      "y": 46.94835,
+      "x": 7.4377,
+      "y": 46.9495,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "velospot",
-      "provider_name": "Velospot",
-      "provider_timezone": "Europe/Zurich",
-      "id": "velospot:002303e",
+      "provider_id": "mobility",
+      "provider_name": "Mobility",
+      "provider_timezone": "CET",
+      "id": "mobility:70025",
       "available": true,
-      "pickup_type": "free_floating",
+      "pickup_type": "station_based",
+      "station_name": "Bern Bahnhof",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 7,
+      "station_region_id": "mobility:null",
       "vehicle_type": [
-        "Bike"
-      ],
-      "vehicle_status_disabled": false,
-      "vehicle_status_reserved": false
+        "Car",
+        "Car",
+        "Car"
+      ]
     },
-    "featureId": "velospot:002303e",
-    "id": "velospot:002303e",
+    "featureId": "mobility:70025",
+    "id": "mobility:70025",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   },
   {
     "geometry": {
-      "x": 7.440534,
-      "y": 46.94835,
+      "x": 7.44335,
+      "y": 46.94518,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "velospot",
-      "provider_name": "Velospot",
-      "provider_timezone": "Europe/Zurich",
-      "id": "velospot:003007e",
+      "provider_id": "mobility",
+      "provider_name": "Mobility",
+      "provider_timezone": "CET",
+      "id": "mobility:69778",
       "available": true,
-      "pickup_type": "free_floating",
+      "pickup_type": "station_based",
+      "station_name": "Bern Marzili Talstation",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 2,
+      "station_region_id": "mobility:null",
       "vehicle_type": [
-        "Bike"
-      ],
-      "vehicle_status_disabled": false,
-      "vehicle_status_reserved": false
+        "Car",
+        "Car"
+      ]
     },
-    "featureId": "velospot:003007e",
-    "id": "velospot:003007e",
+    "featureId": "mobility:69778",
+    "id": "mobility:69778",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   }

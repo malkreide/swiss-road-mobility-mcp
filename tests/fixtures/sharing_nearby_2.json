@@ -1,0 +1,80 @@
+[
+  {
+    "geometry": {
+      "x": 7.438115,
+      "y": 46.94794,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "velospot",
+      "provider_name": "Velospot",
+      "provider_timezone": "Europe/Zurich",
+      "id": "velospot:2f8c2808-25be-432d-b876-3444183cf2e0",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "Bike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "velospot:2f8c2808-25be-432d-b876-3444183cf2e0",
+    "id": "velospot:2f8c2808-25be-432d-b876-3444183cf2e0",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.438115,
+      "y": 46.94794,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "velospot",
+      "provider_name": "Velospot",
+      "provider_timezone": "Europe/Zurich",
+      "id": "velospot:3a2231c7-940f-4d5a-9d67-dc409d37b0a1",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "Bike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "velospot:3a2231c7-940f-4d5a-9d67-dc409d37b0a1",
+    "id": "velospot:3a2231c7-940f-4d5a-9d67-dc409d37b0a1",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.442115,
+      "y": 46.951706,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "velospot",
+      "provider_name": "Velospot",
+      "provider_timezone": "Europe/Zurich",
+      "id": "velospot:e02724e2-9584-4b56-931f-1946929b032e",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "Bike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "velospot:e02724e2-9584-4b56-931f-1946929b032e",
+    "id": "velospot:e02724e2-9584-4b56-931f-1946929b032e",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  }
+]

@@ -160,12 +160,17 @@ class Antwort:
 
     url: str
     text: str
+    # Der Status gehoert zur Antwort. Ohne ihn spielte der Test einen
+    # aufgezeichneten 500 als 200 ab — und zeigte einen Pfad, den die Quelle
+    # gar nicht genommen hat.
+    status: int = 200
     werkzeuge: list[str] = field(default_factory=list)
     darf_kuerzen: bool = True
     dateiname: str = ""
     original_bytes: int = 0
     gekuerzt_von: int = 0
     behalten: int = 0
+    leer: bool = False
     sha256: str = ""
     bytes: int = 0
 
@@ -195,7 +200,7 @@ def _hook_fuer(gesehen: list[Antwort]) -> Callable[[httpx.Response], Awaitable[N
         await response.aread()
         if response.is_redirect:
             return
-        gesehen.append(Antwort(url=str(response.request.url), text=response.text))
+        gesehen.append(Antwort(url=str(response.request.url), text=response.text, status=response.status_code))
 
     return hook
 
@@ -274,10 +279,18 @@ async def _fahre(a: Aufruf) -> list[Antwort]:
         if not gesehen:
             letzter = RuntimeError(f"{a.werkzeug} hat keine Anfrage abgeschickt")
             continue
+        # Je URL die letzte Antwort: nach einem Wiederholungsversuch ist das
+        # die, mit der das Werkzeug weitergearbeitet hat. Ein 500, auf den ein
+        # 200 folgte, als *die* Antwort aufzuzeichnen, behauptete einen
+        # Ausfall, den es so nicht gab.
+        letzte: dict[str, Antwort] = {}
         for antwort in gesehen:
+            letzte.pop(antwort.url, None)
+            letzte[antwort.url] = antwort
+        for antwort in letzte.values():
             antwort.werkzeuge.append(a.werkzeug)
             antwort.darf_kuerzen = a.kuerzen
-        return gesehen
+        return list(letzte.values())
 
     raise RuntimeError(f"{a.name} nach {VERSUCHE} Versuchen nicht aufgezeichnet: {letzter}")
 
@@ -334,6 +347,7 @@ async def main() -> int:
         except json.JSONDecodeError:
             (FIXTURES / antwort.dateiname).write_text(antwort.text, encoding="utf-8")
         else:
+            antwort.leer = daten == []
             if antwort.darf_kuerzen:
                 antwort.gekuerzt_von, antwort.behalten, daten = _kuerze(daten)
             # Neu eingerueckt geschrieben: eine Zeile JSON waere kleiner, aber
@@ -403,6 +417,9 @@ def _schreibe_provenance(antworten: list[Antwort], heute: str) -> None:
         "",
         "Die Fehlerpfade — Timeout, 5xx, leere Trefferliste — bleiben handgeschrieben.",
         "Sie lassen sich nicht auf Zuruf aufzeichnen und sind als Erfindung in Ordnung.",
+        "Ausnahme: Liefert die Quelle beim Aufzeichnen *von sich aus* einen Fehler, auf",
+        "den das Werkzeug weiterarbeitet, steht er hier mit seinem **Status** — und wird",
+        "mit diesem Status abgespielt.",
         "",
     ]
     for a in antworten:
@@ -412,7 +429,15 @@ def _schreibe_provenance(antworten: list[Antwort], heute: str) -> None:
             f"- **Werkzeuge:** {', '.join(f'`{w}`' for w in sorted(a.werkzeuge))}",
             f"- **Schluessel:** `{a.schluessel}`",
         ]
-        if a.gekuerzt_von > a.behalten:
+        if a.status != 200:
+            zeilen.append(f"- **Status:** {a.status}")
+        if a.leer:
+            # Ein `[]` ist eine Aussage der Quelle: an diesem Ort steht nichts.
+            # Aufgezeichnet wird es, weil das Werkzeug genau so fragt — und
+            # ausgewiesen, damit der Waechter gegen leere Fixtures es nicht
+            # fuer eine misslungene Aufnahme halten muss.
+            zeilen.append("- **Auswahl:** leer, wie geliefert — die Quelle meldet hier keinen Treffer")
+        elif a.gekuerzt_von > a.behalten:
             zeilen.append(
                 f"- **Auswahl:** {a.behalten} von {a.gekuerzt_von} Listeneintraegen "
                 f"(je Liste die ersten {ZEILEN}), aus {a.original_bytes} Bytes Rohantwort"
