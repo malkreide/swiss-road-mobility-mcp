@@ -14,7 +14,9 @@ Ausführen: pytest tests/test_integration.py -v
 import pytest
 import pytest_asyncio
 
+from swiss_road_mobility_mcp import shared_mobility
 from swiss_road_mobility_mcp.api_infrastructure import (
+    APIError,
     MobilityHTTPClient,
     RateLimiter,
     haversine_km,
@@ -104,6 +106,39 @@ class TestSharedMobility:
         assert "by_type" in result
         # Zürich HB hat immer irgendwas
         assert result["count"] > 0, "Am Zürich HB sollte es Sharing-Angebote geben"
+
+    # Wacht ueber SFOE/sharedmobility#46. Solange die Quelle die Umkreissuche
+    # ohne Fahrzeugtyp mit HTTP 500 beantwortet, scheitert dieser Test wie
+    # erwartet, und der Lauf bleibt gruen. Repariert sie es, laeuft er durch —
+    # und `strict=True` macht genau diesen Durchlauf rot. Das ist die Meldung:
+    # Der rote Lauf oeffnet das `upstream`-Issue in diesem Repo.
+    #
+    # `raises=AssertionError`, damit nur das Erwartete als erwartet gilt. Eine
+    # Absage der Quelle kommt unten als AssertionError an; alles andere (etwa
+    # eine Egress-Sperre) ist ein echter Fehler und bleibt rot.
+    @pytest.mark.xfail(
+        strict=True,
+        raises=AssertionError,
+        reason=(
+            "SFOE/sharedmobility#46: /identify ohne vehicle_type antwortet mit HTTP 500. "
+            "Laeuft dieser Test durch (XPASS), ist die Quelle repariert: "
+            "#46 pruefen, diesen Marker entfernen."
+        ),
+    )
+    @pytest.mark.asyncio
+    async def test_umkreissuche_ohne_typ_traegt_wieder(self, client):
+        """Die Abfrage, die der Umweg in `_identify_je_typ` ersetzt — direkt gestellt."""
+        params = {
+            "Geometry": f"{ZH_HB_LON},{ZH_HB_LAT}",
+            "Tolerance": "1000",
+            "offset": "0",
+            "geometryFormat": "esrijson",
+        }
+        try:
+            raw = await shared_mobility._identify(client, params, [])
+        except APIError as e:
+            raise AssertionError(f"Quelle scheitert weiter: HTTP {e.status_code}") from e
+        assert isinstance(raw, list) and raw, "Quelle antwortet, aber ohne Treffer am Zuerich HB"
 
     @pytest.mark.asyncio
     async def test_find_nearby_with_filter(self, client):
