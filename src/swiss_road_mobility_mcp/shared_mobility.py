@@ -42,7 +42,8 @@ VEHICLE_TYPES = [
 ]
 
 # Was sich einzeln abfragen laesst. «Other» fehlt: die Quelle antwortete am
-# 4.10.2026 auf `vehicle_type=Other` an jedem gefragten Ort mit HTTP 500.
+# 4.10.2026 auf `vehicle_type=Other` an jedem gefragten Ort mit HTTP 500
+# (gemeldet als SFOE/sharedmobility#46).
 _EINZELN_ABFRAGBAR = tuple(t for t in VEHICLE_TYPES if t != "Other")
 
 # Pickup-Typen
@@ -247,7 +248,13 @@ async def _identify_je_typ(
     scheitert.
 
     Das Ergebnis ist deshalb ausdruecklich unvollstaendig und sagt es: ein
-    stilles Zusammensetzen sähe aus wie die ganze Antwort und waere es nicht.
+    stilles Zusammensetzen saehe aus wie die ganze Antwort und waere es nicht.
+
+    Gemeldet als https://github.com/SFOE/sharedmobility/issues/46. Ob die
+    Quelle repariert ist, prueft der Live-Test
+    `test_umkreissuche_ohne_typ_traegt_wieder` jede Nacht; er wird rot, sobald
+    sie es ist. Der Umweg greift nur bei einem 500 und kann auch danach
+    stehen bleiben — er kostet dann nichts.
 
     Kosten: bis zu acht Abfragen statt einer, sequentiell — gegen eine Quelle,
     die gerade stolpert, und gegen den Tuersteher (30/min), der jede einzeln

@@ -19,12 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   führt zusammen, ordnet nach Distanz und weist das Ergebnis unter
   `completeness` ausdrücklich als **unvollständig** aus — mit den Typen, die
   fehlen («Other» ist bei der Quelle gar nicht abfragbar, andere scheitern je
-  nach Ort). Ein 502/503/504 löst keinen Ausweg aus.
+  nach Ort). Ein 502/503/504 löst keinen Ausweg aus. Bei der Quelle gemeldet
+  als [SFOE/sharedmobility#46](https://github.com/SFOE/sharedmobility/issues/46).
 - **Die Beschreibung von `vehicle_type` nannte Werte, die die Quelle nicht
   kennt.** «Bicycle» und «Cargo-Bicycle» beantwortet sie still mit `[]`; ein
   Modell, das der Beschreibung folgte, meldete «keine Velos» an Orten voller
   Velos. Jetzt stehen dort die Schreibweisen der Quelle (`Bike`, `CargoBike`,
   `E-CargoBike` …), und ein Test hält Beschreibung und Abfrageliste gleich.
+
+### Hinzugefügt
+
+- **Live-Wachtest für SFOE/sharedmobility#46**
+  (`test_umkreissuche_ohne_typ_traegt_wieder`): stellt die Umkreissuche ohne
+  Fahrzeugtyp direkt und ist als strikt erwartetes Scheitern markiert. Solange
+  die Quelle mit 500 antwortet, bleibt der nächtliche Lauf grün; sobald sie
+  repariert ist, wird er einmal rot und öffnet damit das `upstream`-Issue —
+  das ist die Meldung, dass der Marker weg kann.
 
 ### Geändert
 
