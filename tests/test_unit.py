@@ -146,7 +146,7 @@ class TestSharedMobility:
                 {
                     "provider_id": "publibike",
                     "name": "PubliBike",
-                    "vehicle_type": ["E-Bike", "Bicycle"],
+                    "vehicle_type": ["E-Bike", "Bike"],
                     "timezone": "Europe/Zurich",
                 }
             ],
@@ -155,6 +155,150 @@ class TestSharedMobility:
         assert result["count"] == 1
         assert result["providers"][0]["name"] == "PubliBike"
         assert "Bundesamt für Energie" in result["source"]
+
+
+class TestUmkreissucheJeTyp:
+    """Der Ausweg, wenn die Quelle an der Umkreissuche ohne Fahrzeugtyp scheitert.
+
+    Gemessen am 4.10.2026: `/identify` ohne `vehicle_type` gab landesweit HTTP
+    500, mit jedem einzelnen Typ 200. Die Stubs hier bilden genau das nach —
+    die Form der 200er belegt die Aufzeichnung in `tests/fixtures/`.
+    """
+
+    @staticmethod
+    def _ohne_warten(monkeypatch) -> None:
+        async def _kein_schlaf(sekunden: float) -> None: ...
+
+        monkeypatch.setattr(api_infrastructure, "_sleep", _kein_schlaf)
+
+    @staticmethod
+    def _quelle(je_typ: dict[str, list], ohne_typ: int = 500, gescheitert: frozenset[str] = frozenset()):
+        """Antwortet wie die Quelle am 4.10.2026; schreibt die Filter mit."""
+        gefragt: list[list[str]] = []
+
+        def antwort(request: httpx.Request) -> httpx.Response:
+            filters = request.url.params.get_list("filters")
+            gefragt.append(filters)
+            typ = next((f.split("=", 1)[1] for f in filters if ".vehicle_type=" in f), None)
+            if typ is None:
+                if ohne_typ == 200:
+                    return httpx.Response(200, json=[_vehicle("ganz", 8.54, 47.37)])
+                return httpx.Response(ohne_typ, text="Internal Server Error")
+            if typ in gescheitert:
+                return httpx.Response(500, text="Internal Server Error")
+            return httpx.Response(200, json=je_typ.get(typ, []))
+
+        respx.get(f"{BASE_URL}/identify").mock(side_effect=antwort)
+        return gefragt
+
+    @respx.mock
+    async def test_ein_500_ohne_typ_wird_je_typ_beantwortet(self, monkeypatch, client):
+        self._ohne_warten(monkeypatch)
+        gefragt = self._quelle(
+            {
+                "E-Bike": [_vehicle("eb", 8.5417, 47.3769, vtype="E-Bike")],
+                "Car": [_vehicle("car", 8.5417, 47.3769, vtype="Car")],
+            }
+        )
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.5417, latitude=47.3769)
+        assert {v["id"] for v in result["vehicles"]} == {"eb", "car"}
+        assert result["count"] == 2
+        abgefragte = [f[0].split("=", 1)[1] for f in gefragt if f]
+        assert abgefragte == list(shared_mobility._EINZELN_ABFRAGBAR)
+        assert "Other" not in abgefragte, "auf Other antwortet die Quelle mit 500"
+
+    @respx.mock
+    async def test_die_luecke_steht_im_ergebnis(self, monkeypatch, client):
+        """Ein stilles Zusammensetzen saehe aus wie die ganze Antwort."""
+        self._ohne_warten(monkeypatch)
+        self._quelle({"Bike": [_vehicle("b", 8.54, 47.37, vtype="Bike")]})
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert result["completeness"]["complete"] is False
+        assert result["completeness"]["not_queryable_vehicle_types"] == ["Other"]
+        assert result["hint"].startswith("UNVOLLSTÄNDIG")
+
+    @respx.mock
+    async def test_eine_station_unter_zwei_typen_zaehlt_einmal(self, monkeypatch, client):
+        self._ohne_warten(monkeypatch)
+        station = _vehicle("velospot:1", 8.54, 47.37, vtype="E-Bike")
+        self._quelle({"E-Bike": [station], "Bike": [station]})
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert [v["id"] for v in result["vehicles"]] == ["velospot:1"]
+
+    @respx.mock
+    async def test_das_naechste_steht_vorn(self, monkeypatch, client):
+        """Hintereinander gehaengt zeigte `[:50]` nur die ersten Typen."""
+        self._ohne_warten(monkeypatch)
+        fern = [_vehicle(f"bike{i}", 8.60, 47.40, vtype="Bike") for i in range(60)]
+        nah = _vehicle("nah", 8.5417, 47.3769, vtype="Car")
+        self._quelle({"Bike": fern, "Car": [nah]})
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.5417, latitude=47.3769)
+        assert result["vehicles"][0]["id"] == "nah"
+        assert result["count"] == 61 and len(result["vehicles"]) == 50
+
+    @respx.mock
+    async def test_der_abholtyp_geht_in_jede_teilabfrage_mit(self, monkeypatch, client):
+        """`pickup_type=free_floating` allein gab am 4.10.2026 ebenfalls 500."""
+        self._ohne_warten(monkeypatch)
+        gefragt = self._quelle({})
+        await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37, pickup_type="free_floating")
+        teilabfragen = [f for f in gefragt if any(".vehicle_type=" in x for x in f)]
+        assert teilabfragen
+        assert all("ch.bfe.sharedmobility.pickup_type=free_floating" in f for f in teilabfragen)
+
+    @respx.mock
+    async def test_ein_gescheiterter_typ_wird_genannt(self, monkeypatch, client):
+        self._ohne_warten(monkeypatch)
+        self._quelle({"Bike": [_vehicle("b", 8.54, 47.37, vtype="Bike")]}, gescheitert=frozenset({"Car"}))
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert "Car" in result["completeness"]["failed_vehicle_types"]
+        assert "Other, Car." in result["hint"], "der Hinweis muss jeden fehlenden Typ nennen"
+        assert "Car" not in result["completeness"]["queried_vehicle_types"]
+        assert [v["id"] for v in result["vehicles"]] == ["b"]
+
+    @respx.mock
+    async def test_traegt_kein_typ_bleibt_es_bei_der_absage(self, monkeypatch, client):
+        self._ohne_warten(monkeypatch)
+        self._quelle({}, gescheitert=frozenset(shared_mobility._EINZELN_ABFRAGBAR))
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert fehler.value.status_code == 500
+
+    @respx.mock
+    async def test_mit_typ_gibt_es_keinen_ausweg(self, monkeypatch, client):
+        """Wer einen Typ nennt, hat schon die kleinste Abfrage — ein 500 bleibt ein 500."""
+        self._ohne_warten(monkeypatch)
+        route = respx.get(f"{BASE_URL}/identify").respond(500, text="Internal Server Error")
+        with pytest.raises(APIError):
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37, vehicle_type="E-Bike")
+        assert route.call_count == api_infrastructure.MAX_TRANSIENT_RETRIES + 1
+
+    @respx.mock
+    async def test_ein_503_loest_keine_acht_weiteren_abfragen_aus(self, monkeypatch, client):
+        """Eine Quelle, die gerade nicht da ist, wird nicht weiter bedraengt."""
+        self._ohne_warten(monkeypatch)
+        gefragt = self._quelle({}, ohne_typ=503)
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert fehler.value.status_code == 503
+        assert all(not f for f in gefragt), gefragt
+
+    @respx.mock
+    async def test_traegt_die_abfrage_ohne_typ_wird_nichts_zusammengesetzt(self, monkeypatch, client):
+        self._ohne_warten(monkeypatch)
+        gefragt = self._quelle({}, ohne_typ=200)
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert "completeness" not in result
+        assert [v["id"] for v in result["vehicles"]] == ["ganz"]
+        assert gefragt == [[]]
+
+    def test_die_beschreibung_nennt_genau_die_abfragbaren_typen(self):
+        """Bis 4.10.2026 nannte sie «Bicycle» — darauf antwortet die Quelle still mit `[]`."""
+        from swiss_road_mobility_mcp.server import FindSharingInput
+
+        text = FindSharingInput.model_fields["vehicle_type"].description
+        genannt = text.split(":", 1)[1].split(".", 1)[0]
+        assert [t.strip() for t in genannt.split(",")] == list(shared_mobility._EINZELN_ABFRAGBAR)
 
 
 # ===========================================================================

@@ -1,38 +1,8 @@
 [
   {
     "geometry": {
-      "x": 8.252358,
-      "y": 47.0311,
-      "spatialReference": {
-        "wkid": 4326
-      }
-    },
-    "attributes": {
-      "provider_id": "nextbike_ch",
-      "provider_name": "nextbike Switzerland",
-      "provider_phone": "0041415080800",
-      "provider_timezone": "Europe/Brussels",
-      "provider_apps_ios_store_uri": "https://apps.apple.com/app/id504288371",
-      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
-      "id": "nextbike_ch:373982224",
-      "available": true,
-      "pickup_type": "station_based",
-      "station_name": "Busschleife Obernau / Hubelstrasse ",
-      "station_status_installed": true,
-      "station_status_renting": true,
-      "station_status_returning": true,
-      "station_status_num_vehicle_available": 0,
-      "station_region_id": "nextbike_ch:491"
-    },
-    "featureId": "nextbike_ch:373982224",
-    "id": "nextbike_ch:373982224",
-    "layerBodId": "ch.bfe.sharedmobility",
-    "layerName": "Shared Mobility Angebote"
-  },
-  {
-    "geometry": {
-      "x": 7.390321,
-      "y": 46.94017,
+      "x": 7.434678,
+      "y": 46.945553,
       "spatialReference": {
         "wkid": 4326
       }
@@ -43,10 +13,10 @@
       "provider_timezone": "CET",
       "provider_apps_ios_store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
       "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
-      "id": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
+      "id": "voiscooters.com:ae9c6658-4f6f-4f21-8bb7-61e997c3a3fb",
       "available": true,
       "pickup_type": "station_based",
-      "station_name": "Bernstrasse 100",
+      "station_name": "Seilerstrasse 22",
       "station_status_installed": true,
       "station_status_renting": true,
       "station_status_returning": true,
@@ -57,15 +27,15 @@
         "E-Bike"
       ]
     },
-    "featureId": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
-    "id": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
+    "featureId": "voiscooters.com:ae9c6658-4f6f-4f21-8bb7-61e997c3a3fb",
+    "id": "voiscooters.com:ae9c6658-4f6f-4f21-8bb7-61e997c3a3fb",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   },
   {
     "geometry": {
-      "x": 7.448403,
-      "y": 46.94205,
+      "x": 7.436335,
+      "y": 46.945854,
       "spatialReference": {
         "wkid": 4326
       }
@@ -76,10 +46,10 @@
       "provider_timezone": "CET",
       "provider_apps_ios_store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
       "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
-      "id": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
+      "id": "voiscooters.com:e96e46c0-139c-45ec-a4b5-8152b596af96",
       "available": true,
       "pickup_type": "station_based",
-      "station_name": "Bernastrasse 12b",
+      "station_name": "Effingerstrasse 6a",
       "station_status_installed": true,
       "station_status_renting": true,
       "station_status_returning": true,
@@ -90,8 +60,41 @@
         "E-Bike"
       ]
     },
-    "featureId": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
-    "id": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
+    "featureId": "voiscooters.com:e96e46c0-139c-45ec-a4b5-8152b596af96",
+    "id": "voiscooters.com:e96e46c0-139c-45ec-a4b5-8152b596af96",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.438124,
+      "y": 46.944504,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "voiscooters.com",
+      "provider_name": "Voi Technology AB",
+      "provider_timezone": "CET",
+      "provider_apps_ios_store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
+      "id": "voiscooters.com:1d184b9e-9916-4a86-8433-32c0868203c2",
+      "available": true,
+      "pickup_type": "station_based",
+      "station_name": "Sulgeneckstrasse 18",
+      "station_status_installed": true,
+      "station_status_renting": true,
+      "station_status_returning": true,
+      "station_status_num_vehicle_available": 0,
+      "station_region_id": "voiscooters.com:null",
+      "vehicle_type": [
+        "E-Scooter",
+        "E-Bike"
+      ]
+    },
+    "featureId": "voiscooters.com:1d184b9e-9916-4a86-8433-32c0868203c2",
+    "id": "voiscooters.com:1d184b9e-9916-4a86-8433-32c0868203c2",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   }

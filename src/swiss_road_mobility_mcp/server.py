@@ -222,8 +222,9 @@ class FindSharingInput(BaseModel):
     vehicle_type: str | None = Field(
         default=None,
         description=(
-            "Filter by vehicle type. Options: "
-            "Bicycle, E-Bike, E-Scooter, E-Moped, Car, E-Car, Cargo-Bicycle. "
+            "Filter by vehicle type, spelled exactly as the source does: "
+            "Bike, E-Bike, E-Scooter, E-Moped, Car, E-Car, CargoBike, E-CargoBike. "
+            "Other spellings (e.g. 'Bicycle') match nothing and return an empty list. "
             "Leave empty for all types."
         ),
     )
@@ -356,7 +357,10 @@ async def road_find_sharing(params: FindSharingInput) -> dict[str, Any]:
 
     Returns:
         JSON with nearby vehicles/stations, grouped by type,
-        with availability status and booking app links.
+        with availability status and booking app links. A result carrying
+        `completeness` with `complete: false` is a partial answer — tell the
+        user which vehicle types it lacks instead of presenting it as the full
+        picture.
     """
     try:
         result = await shared_mobility.find_nearby_vehicles(

@@ -1,0 +1,89 @@
+[
+  {
+    "geometry": {
+      "x": 7.436442,
+      "y": 46.947712,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "E-CargoBike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
+    "id": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.4447517,
+      "y": 46.94916,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:55580487-93b8-4e1c-8dc4-1975405d74af",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "E-CargoBike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "carvelo2go:55580487-93b8-4e1c-8dc4-1975405d74af",
+    "id": "carvelo2go:55580487-93b8-4e1c-8dc4-1975405d74af",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  },
+  {
+    "geometry": {
+      "x": 7.43624,
+      "y": 46.94668,
+      "spatialReference": {
+        "wkid": 4326
+      }
+    },
+    "attributes": {
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
+      "available": true,
+      "pickup_type": "free_floating",
+      "vehicle_type": [
+        "E-CargoBike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
+    },
+    "featureId": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
+    "id": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
+    "layerBodId": "ch.bfe.sharedmobility",
+    "layerName": "Shared Mobility Angebote"
+  }
+]

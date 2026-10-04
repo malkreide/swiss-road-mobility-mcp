@@ -17,24 +17,33 @@ Drei Hauptabfragen:
 import logging
 from typing import Any
 
-from .api_infrastructure import APIError, MobilityHTTPClient
+from .api_infrastructure import APIError, MobilityHTTPClient, haversine_km
 
 logger = logging.getLogger("swiss-road-mobility-mcp")
 
 # Basis-URL der sharedmobility.ch API
 BASE_URL = "https://api.sharedmobility.ch/v1/sharedmobility"
 
-# Bekannte Fahrzeugtypen im Schweizer Feed
+# Fahrzeugtypen, wie die Quelle sie schreibt — nicht, wie man sie erwarten
+# wuerde. Gelesen am 4.10.2026 aus `/providers` (alle deklarierten Typen).
+# Bis dahin stand hier «Bicycle» und «Cargo-Bicycle»: Werte, die die Quelle nicht
+# kennt und auf die sie mit 200 und `[]` antwortet. Ein Filter darauf meldete
+# «keine Velos» an Orten voller Velos.
 VEHICLE_TYPES = [
-    "Bicycle",
+    "Bike",
     "E-Bike",
     "E-Scooter",
     "E-Moped",
     "Car",
     "E-Car",
-    "Cargo-Bicycle",
+    "CargoBike",
+    "E-CargoBike",
     "Other",
 ]
+
+# Was sich einzeln abfragen laesst. «Other» fehlt: die Quelle antwortete am
+# 4.10.2026 auf `vehicle_type=Other` an jedem gefragten Ort mit HTTP 500.
+_EINZELN_ABFRAGBAR = tuple(t for t in VEHICLE_TYPES if t != "Other")
 
 # Pickup-Typen
 PICKUP_TYPES = ["free_floating", "station_based"]
@@ -134,28 +143,27 @@ async def find_nearby_vehicles(
     if pickup_type:
         filters.append(f"ch.bfe.sharedmobility.pickup_type={pickup_type}")
 
-    # httpx sendet gleiche Keys als Liste (filters=X&filters=Y)
-    if filters:
-        params["filters"] = filters
-
+    vollstaendigkeit: dict | None = None
     try:
-        raw = await client.get_json(
-            f"{BASE_URL}/identify",
-            params=params,
-            cache_prefix="sharing_nearby",
-            cache_ttl=60.0,  # 60s – Echtzeit-Daten
-            limiter_name="sharedmobility",
-        )
-    except APIError:
-        raise
-    except Exception as e:
-        raise APIError(f"Shared Mobility API nicht erreichbar: {e}")
+        raw = await _identify(client, params, filters)
+    except APIError as e:
+        # Nur der Fall, der gemessen ist: ohne Fahrzeugtyp und mit HTTP 500.
+        # Ein 502/503/504 meldet eine Quelle, die gerade nicht da ist — sie mit
+        # acht weiteren Abfragen zu bedraengen, aendert daran nichts.
+        if vehicle_type or e.status_code != 500:
+            raise
+        raw, vollstaendigkeit = await _identify_je_typ(client, params, filters, ausloeser=e)
 
     if not isinstance(raw, list):
         return {"count": 0, "vehicles": [], "hint": "Unerwartetes API-Format."}
 
     # Formatieren und optional filtern
     vehicles = [_format_vehicle(item) for item in raw]
+
+    if vollstaendigkeit is not None:
+        # Acht Teillisten hintereinander gehaengt zeigten unter `[:50]` nur die
+        # ersten Typen. Nach Distanz geordnet zeigen sie das Naechste.
+        vehicles.sort(key=lambda v: _distanz_km(latitude, longitude, v))
 
     if only_available:
         vehicles = [v for v in vehicles if v.get("available")]
@@ -166,7 +174,7 @@ async def find_nearby_vehicles(
         for vt in v.get("vehicle_type", ["Unbekannt"]):
             type_counts[vt] = type_counts.get(vt, 0) + 1
 
-    return {
+    ergebnis: dict[str, Any] = {
         "search": {
             "latitude": latitude,
             "longitude": longitude,
@@ -182,6 +190,118 @@ async def find_nearby_vehicles(
         "vehicles": vehicles[:50],  # Max 50 Ergebnisse für Token-Effizienz
         "hint": ("Ergebnisse zeigen Echtzeit-Verfügbarkeit. Nutze die App-Links zur direkten Buchung beim Anbieter."),
     }
+    if vollstaendigkeit is not None:
+        ergebnis["completeness"] = vollstaendigkeit
+        fehlend = [
+            *vollstaendigkeit["not_queryable_vehicle_types"],
+            *vollstaendigkeit.get("failed_vehicle_types", {}),
+        ]
+        ergebnis["hint"] = (
+            "UNVOLLSTÄNDIG: Die Quelle scheitert an der Umkreissuche ohne Fahrzeugtyp, "
+            "deshalb wurde je Typ einzeln gefragt. Es fehlen Fahrzeuge der Typen: "
+            + ", ".join(fehlend)
+            + ". Details unter 'completeness'. "
+            + ergebnis["hint"]
+        )
+    return ergebnis
+
+
+async def _identify(client: MobilityHTTPClient, params: dict[str, Any], filters: list[str]) -> Any:
+    """Eine Abfrage an `/identify`, mit den gegebenen Filtern."""
+    anfrage = dict(params)
+    # httpx sendet gleiche Keys als Liste (filters=X&filters=Y)
+    if filters:
+        anfrage["filters"] = filters
+    try:
+        return await client.get_json(
+            f"{BASE_URL}/identify",
+            params=anfrage,
+            cache_prefix="sharing_nearby",
+            cache_ttl=60.0,  # 60s – Echtzeit-Daten
+            limiter_name="sharedmobility",
+        )
+    except APIError:
+        raise
+    except Exception as e:
+        raise APIError(f"Shared Mobility API nicht erreichbar: {e}")
+
+
+async def _identify_je_typ(
+    client: MobilityHTTPClient,
+    params: dict[str, Any],
+    filters: list[str],
+    ausloeser: APIError,
+) -> tuple[list, dict]:
+    """
+    Die Umkreissuche ohne Fahrzeugtyp, zusammengesetzt aus einer je Typ.
+
+    Gemessen am 4.10.2026: `/identify` ohne `vehicle_type` antwortete in
+    Zuerich, Bern, Winterthur, Lausanne und Basel mit HTTP 500, ebenso mit
+    `pickup_type=free_floating` allein. Die Quelle scheitert an einzelnen
+    Datensaetzen, und eine Abfrage traegt, sobald der Filter sie ausschliesst.
+    Je Anbieter eingegrenzt: in Zuerich brach allein `velospot`, in Bern
+    `velospot` und `voiscooters.com`. Dort scheiterte darum auch
+    `vehicle_type=E-Scooter`, in Zuerich nicht; `vehicle_type=Other` scheiterte
+    ueberall. Welcher Typ bricht, haengt also am Ort — er wird deshalb nicht
+    vorab ausgelassen, sondern versucht und im Ergebnis genannt, wenn er
+    scheitert.
+
+    Das Ergebnis ist deshalb ausdruecklich unvollstaendig und sagt es: ein
+    stilles Zusammensetzen sähe aus wie die ganze Antwort und waere es nicht.
+
+    Kosten: bis zu acht Abfragen statt einer, sequentiell — gegen eine Quelle,
+    die gerade stolpert, und gegen den Tuersteher (30/min), der jede einzeln
+    zaehlt.
+    """
+    gesammelt: list = []
+    gesehen: set[str] = set()
+    abgefragt: list[str] = []
+    gescheitert: dict[str, str] = {}
+
+    for typ in _EINZELN_ABFRAGBAR:
+        try:
+            teil = await _identify(client, params, [f"ch.bfe.sharedmobility.vehicle_type={typ}", *filters])
+        except APIError as e:
+            gescheitert[typ] = str(e)
+            continue
+        if not isinstance(teil, list):
+            gescheitert[typ] = "Unerwartetes API-Format."
+            continue
+        abgefragt.append(typ)
+        for item in teil:
+            # Eine Station mit E-Bikes und Velos kommt unter beiden Typen.
+            vid = (item.get("attributes") or {}).get("id")
+            if vid:
+                if vid in gesehen:
+                    continue
+                gesehen.add(vid)
+            gesammelt.append(item)
+
+    if not abgefragt:
+        # Keine Teilabfrage hat getragen: dann ist nichts zusammengesetzt, und
+        # der urspruengliche Befund ist die ehrlichste Auskunft.
+        raise ausloeser
+
+    vollstaendigkeit = {
+        "complete": False,
+        "reason": (
+            "Die Quelle antwortete auf die Umkreissuche ohne Fahrzeugtyp mit HTTP 500. "
+            "Abgefragt wurde je Fahrzeugtyp einzeln."
+        ),
+        "queried_vehicle_types": abgefragt,
+        "not_queryable_vehicle_types": [t for t in VEHICLE_TYPES if t not in _EINZELN_ABFRAGBAR],
+    }
+    if gescheitert:
+        vollstaendigkeit["failed_vehicle_types"] = gescheitert
+    return gesammelt, vollstaendigkeit
+
+
+def _distanz_km(latitude: float, longitude: float, fahrzeug: dict) -> float:
+    """Distanz zum Suchpunkt; ohne Koordinaten ganz nach hinten."""
+    lat, lon = fahrzeug.get("latitude"), fahrzeug.get("longitude")
+    if lat is None or lon is None:
+        return float("inf")
+    return haversine_km(latitude, longitude, lat, lon)
 
 
 async def search_stations(

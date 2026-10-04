@@ -1,267 +1,15 @@
 [
   {
-    "provider_id": "lime_winterthur",
-    "name": "Lime City partners from Partners::RegionFeedMediator",
+    "provider_id": "liemobil_liechtenstein",
+    "name": "Liechtenstein",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.li.me",
-    "last_updated": 1786814680
-  },
-  {
-    "provider_id": "donkey_yverdon-les-bains",
-    "name": "Donkey Republic Yverdon-les-Bains",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
-        "discovery_uri": "donkey://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
-        "discovery_uri": "https://dnky.bike"
-      }
-    },
-    "url": "https://www.donkey.bike/cities/bike-rental-yverdon-les-bains/",
-    "phone_number": "0041 31 539 18 90",
-    "purchase_url": "https://www.donkey.bike/pricing/",
-    "email": "support@donkeyrepublic.com",
-    "last_updated": 1786814148
-  },
-  {
-    "provider_id": "lime_opfikon",
-    "name": "Lime City partners from Partners::RegionFeedMediator",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.li.me",
-    "last_updated": 1786814412
-  },
-  {
-    "provider_id": "share_birrer_ch",
-    "name": "Share Birrer AG",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Car",
-      "Car",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "last_updated": 1786814102
-  },
-  {
-    "provider_id": "lime_zurich",
-    "name": "Lime City partners from Partners::RegionFeedMediator",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.li.me",
-    "last_updated": 1786814459
-  },
-  {
-    "provider_id": "bird-platform-partner-jmfleetswl-biel",
-    "name": "bird platform partner jmfleetswl biel",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
       "E-Bike"
     ],
     "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
-      }
-    },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814262
-  },
-  {
-    "provider_id": "nextbike_ch",
-    "name": "nextbike Switzerland",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "Bike",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/app/id504288371",
-        "discovery_uri": "nextbike://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
-        "discovery_uri": "https://app.nextbike.net/"
-      }
-    },
-    "url": "https://www.nextbike.ch/",
-    "phone_number": "0041415080800",
-    "email": "info@nextbike.ch",
-    "last_updated": 1786814284
-  },
-  {
-    "provider_id": "lime_zug",
-    "name": "Lime City partners from Partners::RegionFeedMediator",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.li.me",
-    "last_updated": 1786814642
-  },
-  {
-    "provider_id": "pickebike_basel",
-    "name": "Basel",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Bike",
-      "E-Moped"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/ch/app/pick-e-bike/id1373747610",
-        "discovery_uri": "pickebike://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=ch.pickebike",
-        "discovery_uri": "pickebike://"
-      }
-    },
-    "phone_number": "+41848020304",
-    "last_updated": 1786814340
-  },
-  {
-    "provider_id": "voiscooters.com",
-    "name": "Voi Technology AB",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
-        "discovery_uri": "voiapp://closest_vehicle"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
-        "discovery_uri": "voiapp://closest_vehicle"
-      }
-    },
-    "url": "https://www.voiscooters.com/",
-    "email": "support@voiapp.io",
-    "last_updated": 1786814573
-  },
-  {
-    "provider_id": "bolt_zurich",
-    "name": "Bolt Technology OÜ",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://bolt.onelink.me/sbJ2/payzone?client_id=bray_payzone&deep_link_value=GBFS_PROVIDER_DEEPLINK",
-        "discovery_uri": "bolt://"
-      },
-      "android": {
-        "store_uri": "https://bolt.onelink.me/sbJ2/payzone?client_id=bray_payzone&deep_link_value=GBFS_PROVIDER_DEEPLINK",
-        "discovery_uri": "bolt://"
-      }
-    },
-    "url": "https://www.bolt.eu/",
-    "last_updated": 1786814261
-  },
-  {
-    "provider_id": "lime_wetzikon",
-    "name": "Lime City partners from Partners::RegionFeedMediator",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.li.me",
-    "last_updated": 1786814411
-  },
-  {
-    "provider_id": "bird-grenchen",
-    "name": "bird grenchen",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
-      }
-    },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814722
-  },
-  {
-    "provider_id": "publibike",
-    "name": "PubliBike",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "Bike",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://publibike.ch",
-    "email": "customerservice@publibike.ch",
-    "last_updated": 1786814255
+    "phone_number": "+4232379494",
+    "last_updated": 1791106740
   },
   {
     "provider_id": "bolt_basel",
@@ -285,57 +33,7 @@
       }
     },
     "url": "https://www.bolt.eu/",
-    "last_updated": 1786814722
-  },
-  {
-    "provider_id": "pickebike_fribourg",
-    "name": "Fribourg",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Bike",
-      "E-Moped"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/ch/app/pick-e-bike/id1373747610",
-        "discovery_uri": "pickebike://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=ch.pickebike",
-        "discovery_uri": "pickebike://"
-      }
-    },
-    "phone_number": "+41848020304",
-    "last_updated": 1786814641
-  },
-  {
-    "provider_id": "carvelo2go",
-    "name": "carvelo eCargo-Bike Sharing",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-CargoBike",
-      "CargoBike",
-      "E-Bike",
-      "E-Car"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
-        "discovery_uri": "ch.carvelo2go.ios://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
-        "discovery_uri": "ch.carvelo2go.app://"
-      }
-    },
-    "url": "https://www.carvelo.ch",
-    "phone_number": "058 827 34 14",
-    "email": "info@carvelo.ch",
-    "last_updated": 1786814645
+    "last_updated": 1791106913
   },
   {
     "provider_id": "2em_cars",
@@ -364,98 +62,34 @@
     "last_updated": 1781834403
   },
   {
-    "provider_id": "mybuxi_ch",
-    "name": "mybuxi",
+    "provider_id": "nextbike_ms",
+    "name": "invia BikeShare",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
-      "E-Car"
-    ],
-    "timezone": "Europe/Zurich",
-    "last_updated": 1768398445
-  },
-  {
-    "provider_id": "dott_zurich",
-    "name": "Dott zurich",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/app/id1440301673",
-        "discovery_uri": "com.ridedott.rider://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
-        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
-      }
-    },
-    "last_updated": 1786813270
-  },
-  {
-    "provider_id": "velospot",
-    "name": "Velospot",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Bike",
       "Bike",
-      "Other"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.velospot.info/customer/public",
-    "email": "info@velospot.ch",
-    "last_updated": 1786813200
-  },
-  {
-    "provider_id": "dott_basel",
-    "name": "Dott basel",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/app/id1440301673",
-        "discovery_uri": "com.ridedott.rider://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
-        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
-      }
-    },
-    "last_updated": 1786813271
-  },
-  {
-    "provider_id": "dott_rorschach",
-    "name": "Dott rorschach",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
+      "E-CargoBike",
       "E-Bike"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
       "ios": {
-        "store_uri": "https://apps.apple.com/app/id1440301673",
-        "discovery_uri": "com.ridedott.rider://"
+        "store_uri": "https://apps.apple.com/app/id504288371",
+        "discovery_uri": "nextbike://"
       },
       "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
-        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
+        "store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
+        "discovery_uri": "nextbike://"
       }
     },
-    "last_updated": 1786811813
+    "url": "https://www.mooinz.ch/",
+    "phone_number": "0041415080800",
+    "email": "mooinz@nextbike.ch",
+    "last_updated": 1791106988
   },
   {
-    "provider_id": "bird-biel",
-    "name": "bird biel",
+    "provider_id": "bird-schaffhausen",
+    "name": "bird schaffhausen",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
@@ -474,60 +108,30 @@
       }
     },
     "url": "https://www.bird.co",
-    "last_updated": 1786814573
+    "last_updated": 1791107071
   },
   {
-    "provider_id": "liemobil_liechtenstein",
-    "name": "Liechtenstein",
+    "provider_id": "pickebike_basel",
+    "name": "Basel",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "phone_number": "+4232379494",
-    "last_updated": 1786814460
-  },
-  {
-    "provider_id": "donkey_neuchatel",
-    "name": "Donkey Republic Neuchâtel",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "Bike"
+      "E-Bike",
+      "E-Moped"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
       "ios": {
-        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
-        "discovery_uri": "donkey://"
+        "store_uri": "https://apps.apple.com/ch/app/pick-e-bike/id1373747610",
+        "discovery_uri": "pickebike://"
       },
       "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
-        "discovery_uri": "https://dnky.bike"
+        "store_uri": "https://play.google.com/store/apps/details?id=ch.pickebike",
+        "discovery_uri": "pickebike://"
       }
     },
-    "url": "https://www.donkey.bike/cities/bike-rental-neuchatel/",
-    "phone_number": "0041 31 539 18 90",
-    "purchase_url": "https://www.donkey.bike/pricing/",
-    "email": "support@donkeyrepublic.com",
-    "last_updated": 1786814459
-  },
-  {
-    "provider_id": "sponti",
-    "name": "Sponti-Car",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Car",
-      "E-Bike",
-      "Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://app.ibiola.com",
-    "phone_number": "+41794306077",
-    "email": "info@sponti-car.ch",
-    "last_updated": 1785853716
+    "phone_number": "+41848020304",
+    "last_updated": 1791106860
   },
   {
     "provider_id": "pickebike_aubonne",
@@ -553,30 +157,8 @@
     "last_updated": 1769900520
   },
   {
-    "provider_id": "dott_romanshorn",
-    "name": "Dott romanshorn",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/app/id1440301673",
-        "discovery_uri": "com.ridedott.rider://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
-        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
-      }
-    },
-    "last_updated": 1786811597
-  },
-  {
-    "provider_id": "bird-basel",
-    "name": "bird basel",
+    "provider_id": "bird-biel",
+    "name": "bird biel",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
@@ -595,33 +177,86 @@
       }
     },
     "url": "https://www.bird.co",
-    "last_updated": 1786814184
+    "last_updated": 1791106799
   },
   {
-    "provider_id": "nextbike_ms",
-    "name": "invia BikeShare",
+    "provider_id": "velospot",
+    "name": "Velospot",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
+      "E-Bike",
       "Bike",
+      "Other",
+      "CargoBike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.velospot.info/customer/public",
+    "email": "info@velospot.ch",
+    "last_updated": 1791104400
+  },
+  {
+    "provider_id": "mybuxi_ch",
+    "name": "mybuxi",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Car"
+    ],
+    "timezone": "Europe/Zurich",
+    "last_updated": 1768398445
+  },
+  {
+    "provider_id": "carvelo2go",
+    "name": "carvelo eCargo-Bike Sharing",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
       "E-CargoBike",
-      "E-Bike"
+      "CargoBike",
+      "E-Bike",
+      "E-Car"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
       "ios": {
-        "store_uri": "https://apps.apple.com/app/id504288371",
-        "discovery_uri": "nextbike://"
+        "store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+        "discovery_uri": "ch.carvelo2go.ios://"
       },
       "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
-        "discovery_uri": "https://app.nextbike.net/"
+        "store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+        "discovery_uri": "ch.carvelo2go.app://"
       }
     },
-    "url": "https://www.mooinz.ch/",
-    "phone_number": "0041415080800",
-    "email": "mooinz@nextbike.ch",
-    "last_updated": 1786814288
+    "url": "https://www.carvelo.ch",
+    "phone_number": "058 827 34 14",
+    "email": "info@carvelo.ch",
+    "last_updated": 1791106799
+  },
+  {
+    "provider_id": "donkey_yverdon-les-bains",
+    "name": "Donkey Republic Yverdon-les-Bains",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
+        "discovery_uri": "donkey://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
+        "discovery_uri": "https://dnky.bike"
+      }
+    },
+    "url": "https://www.donkey.bike/cities/bike-rental-yverdon-les-bains/",
+    "phone_number": "0041 31 539 18 90",
+    "purchase_url": "https://www.donkey.bike/pricing/",
+    "email": "support@donkeyrepublic.com",
+    "last_updated": 1791107065
   },
   {
     "provider_id": "lime_uster",
@@ -635,34 +270,58 @@
     ],
     "timezone": "Europe/Zurich",
     "url": "https://www.li.me",
-    "last_updated": 1786814458
+    "last_updated": 1791106911
   },
   {
-    "provider_id": "donkey_thun",
-    "name": "Donkey Republic Thun",
+    "provider_id": "lime_opfikon",
+    "name": "Lime City partners from Partners::RegionFeedMediator",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
-      "Bike",
+      "E-Scooter",
       "E-Bike",
-      "E-CargoBike"
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.li.me",
+    "last_updated": 1791106856
+  },
+  {
+    "provider_id": "lime_winterthur",
+    "name": "Lime City partners from Partners::RegionFeedMediator",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.li.me",
+    "last_updated": 1791106983
+  },
+  {
+    "provider_id": "bird-platform-partner-jmfleetswl-biel",
+    "name": "bird platform partner jmfleetswl biel",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
       "ios": {
-        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
-        "discovery_uri": "donkey://"
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
       },
       "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
-        "discovery_uri": "https://dnky.bike"
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
       }
     },
-    "url": "https://www.donkey.bike/cities/bike-rental-thun/",
-    "phone_number": "0041 31 539 18 90",
-    "purchase_url": "https://www.donkey.bike/pricing/",
-    "email": "support@donkeyrepublic.com",
-    "last_updated": 1786814562
+    "url": "https://www.bird.co",
+    "last_updated": 1791106728
   },
   {
     "provider_id": "donkey_ge",
@@ -688,7 +347,7 @@
     "phone_number": "+41315391890",
     "purchase_url": "https://www.donkey.bike/pricing/",
     "email": "support@donkeyrepublic.com",
-    "last_updated": 1786814259
+    "last_updated": 1791106724
   },
   {
     "provider_id": "mobility",
@@ -703,43 +362,31 @@
     "timezone": "Europe/Zurich",
     "url": "https://www.mobility.ch",
     "email": "office@mobility.ch",
-    "last_updated": 1786814047
+    "last_updated": 1791106916
   },
   {
-    "provider_id": "bird-zurich",
-    "name": "bird zurich",
+    "provider_id": "bolt_zurich",
+    "name": "Bolt Technology OÜ",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
       "E-Scooter",
-      "E-Bike"
+      "E-Bike",
+      "Bike"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
       "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
+        "store_uri": "https://bolt.sng.link/Epy3j/o9sr?pcn=Mobimeo&_smtype=3&client_id=all_germany_mobimeo&_dl=GBFS_PROVIDER_DEEPLINK",
+        "discovery_uri": "bolt://"
       },
       "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
+        "store_uri": "https://bolt.sng.link/Epy3j/o9sr?pcn=Mobimeo&_smtype=3&client_id=all_germany_mobimeo&_dl=GBFS_PROVIDER_DEEPLINK",
+        "discovery_uri": "bolt://"
       }
     },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814576
-  },
-  {
-    "provider_id": "edrivecarsharing",
-    "name": "edrive carsharing AG",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Car"
-    ],
-    "timezone": "Europe/Zurich",
-    "url": "https://www.edrivecarsharing.ch/",
-    "purchase_url": "https://www.edrivecarsharing.ch/",
-    "last_updated": 1786814733
+    "url": "https://www.bolt.eu/",
+    "last_updated": 1791106993
   },
   {
     "provider_id": "bird-kloten",
@@ -762,17 +409,15 @@
       }
     },
     "url": "https://www.bird.co",
-    "last_updated": 1786814572
+    "last_updated": 1791106953
   },
   {
-    "provider_id": "donkey_kreuzlingen",
-    "name": "Donkey Republic Kreuzlingen",
+    "provider_id": "donkey_neuchatel",
+    "name": "Donkey Republic Neuchâtel",
     "ttl": 60,
     "language": "en",
     "vehicle_type": [
-      "Bike",
-      "E-Bike",
-      "E-CargoBike"
+      "Bike"
     ],
     "timezone": "Europe/Zurich",
     "rental_apps": {
@@ -785,11 +430,84 @@
         "discovery_uri": "https://dnky.bike"
       }
     },
-    "url": "https://www.donkey.bike/cities/bike-rental-kreuzlingen/",
+    "url": "https://www.donkey.bike/cities/bike-rental-neuchatel/",
     "phone_number": "0041 31 539 18 90",
     "purchase_url": "https://www.donkey.bike/pricing/",
     "email": "support@donkeyrepublic.com",
-    "last_updated": 1786814251
+    "last_updated": 1791106974
+  },
+  {
+    "provider_id": "lime_zug",
+    "name": "Lime City partners from Partners::RegionFeedMediator",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.li.me",
+    "last_updated": 1791106801
+  },
+  {
+    "provider_id": "dott_basel",
+    "name": "Dott basel",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id1440301673",
+        "discovery_uri": "com.ridedott.rider://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
+        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
+      }
+    },
+    "last_updated": 1791104184
+  },
+  {
+    "provider_id": "dott_rorschach",
+    "name": "Dott rorschach",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id1440301673",
+        "discovery_uri": "com.ridedott.rider://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
+        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
+      }
+    },
+    "last_updated": 1791105573
+  },
+  {
+    "provider_id": "sponti",
+    "name": "Sponti-Car",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Car",
+      "E-Bike",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://app.ibiola.com",
+    "phone_number": "+41794306077",
+    "email": "info@sponti-car.ch",
+    "last_updated": 1788660850
   },
   {
     "provider_id": "lime_basel",
@@ -803,98 +521,7 @@
     ],
     "timezone": "Europe/Zurich",
     "url": "https://www.li.me",
-    "last_updated": 1786814446
-  },
-  {
-    "provider_id": "bird-platform-partner-jmfleets-bulle",
-    "name": "bird platform partner jmfleets bulle",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
-      }
-    },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814493
-  },
-  {
-    "provider_id": "bird-schaffhausen",
-    "name": "bird schaffhausen",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
-      }
-    },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814644
-  },
-  {
-    "provider_id": "bird-winterthur",
-    "name": "bird winterthur",
-    "ttl": 60,
-    "language": "en",
-    "vehicle_type": [
-      "E-Scooter",
-      "E-Bike"
-    ],
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
-        "discovery_uri": "bird://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
-        "discovery_uri": "bird://charger-onboarding"
-      }
-    },
-    "url": "https://www.bird.co",
-    "last_updated": 1786814649
-  },
-  {
-    "provider_id": "donkey_le_locle",
-    "name": "Donkey Republic Le Locle",
-    "ttl": 60,
-    "language": "en",
-    "timezone": "Europe/Zurich",
-    "rental_apps": {
-      "ios": {
-        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
-        "discovery_uri": "donkey://"
-      },
-      "android": {
-        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
-        "discovery_uri": "https://dnky.bike"
-      }
-    },
-    "url": "https://www.donkey.bike/cities/bike-rental-le-locle/",
-    "phone_number": "0041 31 539 18 90",
-    "purchase_url": "https://www.donkey.bike/pricing/",
-    "email": "support@donkeyrepublic.com",
-    "last_updated": 1776803114
+    "last_updated": 1791107079
   },
   {
     "provider_id": "quickrent",
@@ -921,6 +548,381 @@
     "last_updated": 1783323134
   },
   {
+    "provider_id": "dott_zurich",
+    "name": "Dott zurich",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id1440301673",
+        "discovery_uri": "com.ridedott.rider://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
+        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
+      }
+    },
+    "last_updated": 1791104975
+  },
+  {
+    "provider_id": "dott_romanshorn",
+    "name": "Dott romanshorn",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id1440301673",
+        "discovery_uri": "com.ridedott.rider://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.ridedott.rider",
+        "discovery_uri": "com.ridedott.rider://v.ridedott.com"
+      }
+    },
+    "last_updated": 1791105841
+  },
+  {
+    "provider_id": "donkey_thun",
+    "name": "Donkey Republic Thun",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "Bike",
+      "E-Bike",
+      "E-CargoBike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
+        "discovery_uri": "donkey://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
+        "discovery_uri": "https://dnky.bike"
+      }
+    },
+    "url": "https://www.donkey.bike/cities/bike-rental-thun/",
+    "phone_number": "0041 31 539 18 90",
+    "purchase_url": "https://www.donkey.bike/pricing/",
+    "email": "support@donkeyrepublic.com",
+    "last_updated": 1791106944
+  },
+  {
+    "provider_id": "share_birrer_ch",
+    "name": "Share Birrer AG",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Car",
+      "Car",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "last_updated": 1791106507
+  },
+  {
+    "provider_id": "voiscooters.com",
+    "name": "Voi Technology AB",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
+        "discovery_uri": "voiapp://closest_vehicle"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
+        "discovery_uri": "voiapp://closest_vehicle"
+      }
+    },
+    "url": "https://www.voiscooters.com/",
+    "email": "support@voiapp.io",
+    "last_updated": 1791106877
+  },
+  {
+    "provider_id": "lime_zurich",
+    "name": "Lime City partners from Partners::RegionFeedMediator",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.li.me",
+    "last_updated": 1791106911
+  },
+  {
+    "provider_id": "nextbike_ch",
+    "name": "nextbike Switzerland",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "Bike",
+      "E-Bike",
+      "E-CargoBike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/app/id504288371",
+        "discovery_uri": "nextbike://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
+        "discovery_uri": "nextbike://"
+      }
+    },
+    "url": "https://www.nextbike.ch/",
+    "phone_number": "0041415080800",
+    "email": "info@nextbike.ch",
+    "last_updated": 1791107043
+  },
+  {
+    "provider_id": "lime_wetzikon",
+    "name": "Lime City partners from Partners::RegionFeedMediator",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike",
+      "Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.li.me",
+    "last_updated": 1791106802
+  },
+  {
+    "provider_id": "bird-grenchen",
+    "name": "bird grenchen",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
+      }
+    },
+    "url": "https://www.bird.co",
+    "last_updated": 1791106731
+  },
+  {
+    "provider_id": "donkey_kreuzlingen",
+    "name": "Donkey Republic Kreuzlingen",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "Bike",
+      "E-Bike",
+      "E-CargoBike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
+        "discovery_uri": "donkey://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
+        "discovery_uri": "https://dnky.bike"
+      }
+    },
+    "url": "https://www.donkey.bike/cities/bike-rental-kreuzlingen/",
+    "phone_number": "0041 31 539 18 90",
+    "purchase_url": "https://www.donkey.bike/pricing/",
+    "email": "support@donkeyrepublic.com",
+    "last_updated": 1791107061
+  },
+  {
+    "provider_id": "bird-platform-partner-jmfleets-bulle",
+    "name": "bird platform partner jmfleets bulle",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
+      }
+    },
+    "url": "https://www.bird.co",
+    "last_updated": 1791106840
+  },
+  {
+    "provider_id": "bird-zurich",
+    "name": "bird zurich",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
+      }
+    },
+    "url": "https://www.bird.co",
+    "last_updated": 1791106989
+  },
+  {
+    "provider_id": "edrivecarsharing",
+    "name": "edrive carsharing AG",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Car"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://www.edrivecarsharing.ch/",
+    "purchase_url": "https://www.edrivecarsharing.ch/",
+    "last_updated": 1791107089
+  },
+  {
+    "provider_id": "bird-basel",
+    "name": "bird basel",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
+      }
+    },
+    "url": "https://www.bird.co",
+    "last_updated": 1791106989
+  },
+  {
+    "provider_id": "publibike",
+    "name": "PubliBike",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "Bike",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "url": "https://publibike.ch",
+    "email": "customerservice@publibike.ch",
+    "last_updated": 1791107067
+  },
+  {
+    "provider_id": "pickebike_fribourg",
+    "name": "Fribourg",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Bike",
+      "E-Moped"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/ch/app/pick-e-bike/id1373747610",
+        "discovery_uri": "pickebike://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=ch.pickebike",
+        "discovery_uri": "pickebike://"
+      }
+    },
+    "phone_number": "+41848020304",
+    "last_updated": 1791106861
+  },
+  {
+    "provider_id": "bird-winterthur",
+    "name": "bird winterthur",
+    "ttl": 60,
+    "language": "en",
+    "vehicle_type": [
+      "E-Scooter",
+      "E-Bike"
+    ],
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/us/app/bird-be-free-enjoy-the-ride/id1260842311",
+        "discovery_uri": "bird://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=co.bird.android",
+        "discovery_uri": "bird://charger-onboarding"
+      }
+    },
+    "url": "https://www.bird.co",
+    "last_updated": 1791106911
+  },
+  {
+    "provider_id": "donkey_le_locle",
+    "name": "Donkey Republic Le Locle",
+    "ttl": 60,
+    "language": "en",
+    "timezone": "Europe/Zurich",
+    "rental_apps": {
+      "ios": {
+        "store_uri": "https://apps.apple.com/pl/app/donkey-republic/id933526449",
+        "discovery_uri": "donkey://"
+      },
+      "android": {
+        "store_uri": "https://play.google.com/store/apps/details?id=com.donkeyrepublic.bike.android",
+        "discovery_uri": "https://dnky.bike"
+      }
+    },
+    "url": "https://www.donkey.bike/cities/bike-rental-le-locle/",
+    "phone_number": "0041 31 539 18 90",
+    "purchase_url": "https://www.donkey.bike/pricing/",
+    "email": "support@donkeyrepublic.com",
+    "last_updated": 1776803114
+  },
+  {
     "provider_id": "dott_st-gallen",
     "name": "Dott st.-gallen",
     "ttl": 60,
@@ -940,6 +942,6 @@
         "discovery_uri": "com.ridedott.rider://v.ridedott.com"
       }
     },
-    "last_updated": 1786812320
+    "last_updated": 1791105923
   }
 ]

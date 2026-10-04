@@ -3,23 +3,23 @@
     {
       "layerBodId": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis",
       "layerName": "Amtliches Gebäudeadressverzeichnis",
-      "featureId": 101443786,
-      "id": 101443786,
+      "featureId": 100777096,
+      "id": 100777096,
       "properties": {
-        "adr_egaid": 101443786,
-        "bdg_egid": 2241912,
-        "adr_edid": 2,
-        "str_esid": 10107624,
-        "stn_label": "Bahnhofplatz",
-        "adr_number": "10b",
+        "adr_egaid": 100777096,
+        "bdg_egid": 1230771,
+        "adr_edid": 0,
+        "str_esid": 10008280,
+        "stn_label": "Bubenbergplatz",
+        "adr_number": "4a",
         "zip_label": "3011 Bern",
         "com_fosnr": 351,
         "com_name": "Bern",
         "adr_status": "1",
         "adr_official": true,
-        "bdg_category": "non_residential",
+        "bdg_category": "partly_residential",
         "adr_modified": "20241115",
-        "label": 101443786
+        "label": 100777096
       }
     },
     {
@@ -47,23 +47,23 @@
     {
       "layerBodId": "ch.swisstopo.amtliches-gebaeudeadressverzeichnis",
       "layerName": "Amtliches Gebäudeadressverzeichnis",
-      "featureId": 101483763,
-      "id": 101483763,
+      "featureId": 101443786,
+      "id": 101443786,
       "properties": {
-        "adr_egaid": 101483763,
-        "bdg_egid": 1230771,
-        "adr_edid": 1,
+        "adr_egaid": 101443786,
+        "bdg_egid": 2241912,
+        "adr_edid": 2,
         "str_esid": 10107624,
         "stn_label": "Bahnhofplatz",
-        "adr_number": "6",
+        "adr_number": "10b",
         "zip_label": "3011 Bern",
         "com_fosnr": 351,
         "com_name": "Bern",
         "adr_status": "1",
         "adr_official": true,
-        "bdg_category": "partly_residential",
+        "bdg_category": "non_residential",
         "adr_modified": "20241115",
-        "label": 101483763
+        "label": 101443786
       }
     }
   ]

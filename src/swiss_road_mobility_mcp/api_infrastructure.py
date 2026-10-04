@@ -334,7 +334,10 @@ class MobilityHTTPClient:
                         e.response.status_code,
                     )
                     continue
-                raise APIError(f"Die Datenquelle antwortete mit HTTP {e.response.status_code}.") from e
+                raise APIError(
+                    f"Die Datenquelle antwortete mit HTTP {e.response.status_code}.",
+                    status_code=e.response.status_code,
+                ) from e
             except httpx.TimeoutException as e:
                 raise APIError(f"Timeout nach {REQUEST_TIMEOUT:.0f}s für {url}") from e
             except TRANSIENT_ERRORS as e:
@@ -382,6 +385,15 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 class APIError(Exception):
-    """Allgemeiner API-Fehler."""
+    """Allgemeiner API-Fehler.
 
-    pass
+    `status_code` traegt den HTTP-Status, wenn die Quelle einen geliefert hat,
+    sonst `None`. Der Aufrufer braucht ihn, um eine Absage (4xx) von einem
+    Scheitern der Quelle (5xx) zu unterscheiden — aus dem Meldungstext
+    zurueckgelesen waere das eine Ableitung, die beim naechsten Umformulieren
+    still bricht.
+    """
+
+    def __init__(self, message: str = "", *, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
