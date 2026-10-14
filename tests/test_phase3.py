@@ -223,6 +223,11 @@ class TestMultimodalModule:
             assert "transfers" in conn
             assert "sections" in conn
             assert isinstance(conn["sections"], list)
+            # Bis 14.10.2026 stand hier jede Dauer auf 0: die Quelle schreibt
+            # «00d00:56:00», der Parser erwartete «HH:MM:SS». Zuerich–Bern
+            # dauert real knapp eine bis anderthalb Stunden.
+            assert isinstance(conn["duration_min"], int), conn["duration_min"]
+            assert 30 <= conn["duration_min"] <= 180, conn["duration_min"]
 
     @pytest.mark.asyncio
     async def test_mobility_snapshot_structure(self):
