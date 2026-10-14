@@ -53,10 +53,25 @@ async def _find_nearest_station(latitude: float, longitude: float) -> dict | Non
 
     Nutzt transport.opendata.ch /locations Endpunkt.
     Gibt None zurück wenn kein Bahnhof gefunden.
+
+    Achtung Achsen: Bei transport.opendata.ch ist `x` der Breitengrad und `y`
+    der Laengengrad — in der Anfrage wie in der Antwort (docs.html: «x
+    Latitude», «y Longitude»). Hier stand bis 14.10.2026 das Umgekehrte. Die
+    Quelle hat die vertauschte Anfrage lange stillschweigend richtig
+    beantwortet (Aufzeichnung vom 15.8.2026: Bern, Distanz 0); seit dem
+    naechtlichen Lauf vom 6.10.2026 nimmt sie sie woertlich und lieferte fuer
+    Zuerich HB «Ancona», 4971 km.
+
+    `type=station` wirkt laut derselben Doku nur zusammen mit `query`. Bei der
+    Koordinatensuche kommen deshalb auch Adressen zurueck — ohne `id` und
+    zum Teil ohne Koordinaten, und oft zuoberst. Genommen wird darum der
+    erste Treffer mit `id` und Koordinaten, nicht der erste ueberhaupt; der
+    erste ueberhaupt war am 15.8.2026 eine Adresse ohne Koordinaten, und die
+    Funktion gab still `None` zurueck.
     """
     params = {
-        "x": longitude,  # Achtung: API nimmt x=lon, y=lat
-        "y": latitude,
+        "x": latitude,
+        "y": longitude,
         "type": "station",
     }
 
@@ -72,18 +87,24 @@ async def _find_nearest_station(latitude: float, longitude: float) -> dict | Non
             logger.warning(f"transport.opendata.ch Locations-Fehler: {e}")
             return None
 
-    stations = data.get("stations", [])
-    if not stations:
+    # Ersten Haltepunkt nehmen (die Quelle sortiert nach Distanz); Adressen
+    # tragen keine `id`.
+    best = next(
+        (
+            s
+            for s in data.get("stations") or []
+            if s.get("id")
+            and (s.get("coordinate") or {}).get("x") is not None
+            and (s.get("coordinate") or {}).get("y") is not None
+        ),
+        None,
+    )
+    if best is None:
         return None
 
-    # Ersten (nächsten) Treffer nehmen
-    best = stations[0]
-    coord = best.get("coordinate", {})
-    station_lat = coord.get("y")  # Achtung: API gibt y=lat zurück
-    station_lon = coord.get("x")
-
-    if station_lat is None or station_lon is None:
-        return None
+    coord = best["coordinate"]
+    station_lat = coord["x"]
+    station_lon = coord["y"]
 
     dist = haversine_km(latitude, longitude, float(station_lat), float(station_lon))
 
@@ -126,8 +147,8 @@ async def _find_stations_by_name(query: str, limit: int = 5) -> list[dict]:
             {
                 "id": s.get("id", ""),
                 "name": s.get("name", ""),
-                "latitude": coord.get("y"),
-                "longitude": coord.get("x"),
+                "latitude": coord.get("x"),  # x = Breitengrad, siehe oben
+                "longitude": coord.get("y"),
             }
         )
     return results

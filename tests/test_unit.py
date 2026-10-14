@@ -18,7 +18,7 @@ import httpx
 import pytest
 import respx
 
-from swiss_road_mobility_mcp import api_infrastructure, ev_charging, geo_admin, shared_mobility
+from swiss_road_mobility_mcp import api_infrastructure, ev_charging, geo_admin, multimodal, shared_mobility
 from swiss_road_mobility_mcp.api_infrastructure import (
     APIError,
     MobilityHTTPClient,
@@ -299,6 +299,69 @@ class TestUmkreissucheJeTyp:
         text = FindSharingInput.model_fields["vehicle_type"].description
         genannt = text.split(":", 1)[1].split(".", 1)[0]
         assert [t.strip() for t in genannt.split(",")] == list(shared_mobility._EINZELN_ABFRAGBAR)
+
+
+class TestHaltepunktAchsen:
+    """transport.opendata.ch: `x` ist der Breitengrad, `y` der Laengengrad.
+
+    In der Anfrage wie in der Antwort (docs.html: «x Latitude», «y Longitude»).
+    Bis 14.10.2026 nahm der Code das Umgekehrte an; seit dem 6.10.2026 lieferte
+    die Quelle fuer Zuerich HB deshalb «Ancona», 4971 km entfernt. Die Form der
+    Antwort hier ist die der Aufzeichnung — eine Adresse ohne `id` zuoberst.
+    """
+
+    ZH = (47.3769, 8.5417)
+
+    @staticmethod
+    def _antwort(*eintraege):
+        return httpx.Response(200, json={"stations": list(eintraege)})
+
+    @staticmethod
+    def _adresse(x=None, y=None):
+        return {"id": None, "name": "Bahnhofbrücke 1, Zürich", "coordinate": {"type": "WGS84", "x": x, "y": y}}
+
+    @staticmethod
+    def _halt(x, y, name="Zürich HB", sid="8503000"):
+        return {"id": sid, "name": name, "coordinate": {"type": "WGS84", "x": x, "y": y}}
+
+    @respx.mock
+    async def test_die_anfrage_schickt_x_als_breitengrad(self):
+        route = respx.get(multimodal.LOCATIONS_URL).mock(return_value=self._antwort(self._halt(47.378176, 8.540212)))
+        await multimodal._find_nearest_station(*self.ZH)
+        params = route.calls.last.request.url.params
+        assert float(params["x"]) == self.ZH[0]
+        assert float(params["y"]) == self.ZH[1]
+
+    @respx.mock
+    async def test_die_antwort_liest_x_als_breitengrad(self):
+        respx.get(multimodal.LOCATIONS_URL).mock(return_value=self._antwort(self._halt(47.378176, 8.540212)))
+        result = await multimodal._find_nearest_station(*self.ZH)
+        assert result["latitude"] == 47.378176
+        assert result["longitude"] == 8.540212
+        assert result["distance_from_search_km"] < 1.0
+
+    @respx.mock
+    async def test_eine_adresse_zuoberst_wird_uebergangen(self):
+        """`type=station` wirkt nur mit `query` — bei Koordinaten kommen Adressen mit."""
+        respx.get(multimodal.LOCATIONS_URL).mock(
+            return_value=self._antwort(self._adresse(), self._adresse(47.3768, 8.5420), self._halt(47.378176, 8.540212))
+        )
+        result = await multimodal._find_nearest_station(*self.ZH)
+        assert result is not None, "die Adresse ohne Koordinaten hat den Haltepunkt verdeckt"
+        assert result["id"] == "8503000"
+
+    @respx.mock
+    async def test_nur_adressen_ergeben_keinen_haltepunkt(self):
+        respx.get(multimodal.LOCATIONS_URL).mock(return_value=self._antwort(self._adresse(47.3768, 8.5420)))
+        assert await multimodal._find_nearest_station(*self.ZH) is None
+
+    @respx.mock
+    async def test_die_namenssuche_liest_x_als_breitengrad(self):
+        respx.get(multimodal.LOCATIONS_URL).mock(
+            return_value=self._antwort(self._halt(46.948823, 7.439123, name="Bern", sid="8507000"))
+        )
+        [bern] = await multimodal._find_stations_by_name("Bern", limit=1)
+        assert (bern["latitude"], bern["longitude"]) == (46.948823, 7.439123)
 
 
 # ===========================================================================

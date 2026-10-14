@@ -35,64 +35,59 @@
   },
   {
     "geometry": {
-      "x": 7.4377,
-      "y": 46.9495,
+      "x": 7.436442,
+      "y": 46.947712,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "mobility",
-      "provider_name": "Mobility",
-      "provider_timezone": "CET",
-      "id": "mobility:70025",
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
       "available": true,
-      "pickup_type": "station_based",
-      "station_name": "Bern Bahnhof",
-      "station_status_installed": true,
-      "station_status_renting": true,
-      "station_status_returning": true,
-      "station_status_num_vehicle_available": 7,
-      "station_region_id": "mobility:null",
+      "pickup_type": "free_floating",
       "vehicle_type": [
-        "Car",
-        "Car",
-        "Car"
-      ]
+        "E-CargoBike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
     },
-    "featureId": "mobility:70025",
-    "id": "mobility:70025",
+    "featureId": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
+    "id": "carvelo2go:289864c3-7b98-47a4-887e-60833e83719b",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   },
   {
     "geometry": {
-      "x": 7.44335,
-      "y": 46.94518,
+      "x": 7.43624,
+      "y": 46.94668,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "mobility",
-      "provider_name": "Mobility",
-      "provider_timezone": "CET",
-      "id": "mobility:69778",
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
       "available": true,
-      "pickup_type": "station_based",
-      "station_name": "Bern Marzili Talstation",
-      "station_status_installed": true,
-      "station_status_renting": true,
-      "station_status_returning": true,
-      "station_status_num_vehicle_available": 2,
-      "station_region_id": "mobility:null",
+      "pickup_type": "free_floating",
       "vehicle_type": [
-        "Car",
-        "Car"
-      ]
+        "E-CargoBike"
+      ],
+      "vehicle_status_disabled": false,
+      "vehicle_status_reserved": false
     },
-    "featureId": "mobility:69778",
-    "id": "mobility:69778",
+    "featureId": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
+    "id": "carvelo2go:038760f1-12ea-4635-a42a-051ee2e6377b",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   }

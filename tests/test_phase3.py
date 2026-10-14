@@ -173,9 +173,11 @@ class TestMultimodalModule:
             longitude=ZURICH_HB["lon"],
         )
 
-        if result is None:
-            pytest.skip("transport.opendata.ch nicht erreichbar")
-
+        # Kein `skip` bei `None`: Hier stand bis 14.10.2026 «transport.opendata.ch
+        # nicht erreichbar». Die Quelle war erreichbar — `None` kam, weil der
+        # erste Treffer eine Adresse ohne Koordinaten war. Der Skip hat genau
+        # den Fehler versteckt, den dieser Test finden soll.
+        assert result is not None, "kein Haltepunkt gefunden — erst die Quelle abfragen, dann einordnen"
         assert isinstance(result, dict)
         assert "name" in result
         assert "latitude" in result
