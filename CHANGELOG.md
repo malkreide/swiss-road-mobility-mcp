@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ist `x` der Breitengrad und `y` der Längengrad (docs.html), der Server nahm
   beides umgekehrt an, beim Senden wie beim Lesen. Die Quelle hatte die
   vertauschte Anfrage lange stillschweigend richtig beantwortet; seit dem
-  13.10.2026 nimmt sie sie wörtlich und lieferte für Zürich HB «Ancona»
-  (4971 km), womit der Reiseplan die ÖV-Verbindung ab Ancona suchte. Davor
+  6.10.2026 nimmt sie sie wörtlich und lieferte für Zürich HB «Ancona»
+  (4971 km), womit der Reiseplan die ÖV-Verbindung ab Ancona suchte. Der
+  nächtliche Live-Lauf war deshalb ab dem 6.10. rot (Issue #95). Davor
   fehlte der Haltepunkt still: `type=station` wirkt nur zusammen mit `query`,
   zuoberst kam eine Adresse ohne Koordinaten, und die Funktion gab `None`
   zurück. Der Live-Test übersprang das als «nicht erreichbar». Jetzt: richtige
@@ -45,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Live-Wachtest für SFOE/sharedmobility#46**
   (`test_umkreissuche_ohne_typ_traegt_wieder`): stellt die Umkreissuche ohne
   Fahrzeugtyp direkt. Er stand zunächst als strikt erwartetes Scheitern und
-  meldete am 13.10.2026 mit XPASS, dass die Quelle repariert ist (behoben am
+  meldete am 12.10.2026 mit XPASS, dass die Quelle repariert ist (behoben am
   12.10.2026: der Hostname zeigte auf einen alten Server). Seither ist er ein
   gewöhnlicher Live-Test gegen einen Rückfall.
 

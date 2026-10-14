@@ -305,8 +305,8 @@ class TestHaltepunktAchsen:
     """transport.opendata.ch: `x` ist der Breitengrad, `y` der Laengengrad.
 
     In der Anfrage wie in der Antwort (docs.html: «x Latitude», «y Longitude»).
-    Bis 14.10.2026 nahm der Code das Umgekehrte an; am 13.10.2026 lieferte die
-    Quelle fuer Zuerich HB deshalb «Ancona», 4971 km entfernt. Die Form der
+    Bis 14.10.2026 nahm der Code das Umgekehrte an; seit dem 6.10.2026 lieferte
+    die Quelle fuer Zuerich HB deshalb «Ancona», 4971 km entfernt. Die Form der
     Antwort hier ist die der Aufzeichnung — eine Adresse ohne `id` zuoberst.
     """
 

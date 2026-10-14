@@ -324,8 +324,8 @@ async def test_der_naechste_haltepunkt_liegt_beim_suchpunkt(quelle):
 
     Bis 14.10.2026 schickte und las der Server `x` als Laengengrad. Die
     Aufzeichnung vom 15.8.2026 zeigte die richtige Reihenfolge bereits
-    (`x: 46.94` fuer Bern), nur hielt sie niemand gegen den Code; am
-    13.10.2026 lieferte die Quelle fuer Zuerich HB deshalb «Ancona». Zuoberst
+    (`x: 46.94` fuer Bern), nur hielt sie niemand gegen den Code; seit dem
+    6.10.2026 lieferte die Quelle fuer Zuerich HB deshalb «Ancona». Zuoberst
     steht in der Aufzeichnung eine Adresse ohne `id` — auch die darf den
     Haltepunkt nicht verdecken.
     """

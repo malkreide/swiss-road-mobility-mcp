@@ -58,8 +58,9 @@ async def _find_nearest_station(latitude: float, longitude: float) -> dict | Non
     der Laengengrad — in der Anfrage wie in der Antwort (docs.html: «x
     Latitude», «y Longitude»). Hier stand bis 14.10.2026 das Umgekehrte. Die
     Quelle hat die vertauschte Anfrage lange stillschweigend richtig
-    beantwortet (Aufzeichnung vom 15.8.2026: Bern, Distanz 0); am 13.10.2026
-    nahm sie sie woertlich und lieferte fuer Zuerich HB «Ancona», 4971 km.
+    beantwortet (Aufzeichnung vom 15.8.2026: Bern, Distanz 0); seit dem
+    naechtlichen Lauf vom 6.10.2026 nimmt sie sie woertlich und lieferte fuer
+    Zuerich HB «Ancona», 4971 km.
 
     `type=station` wirkt laut derselben Doku nur zusammen mit `query`. Bei der
     Koordinatensuche kommen deshalb auch Adressen zurueck — ohne `id` und

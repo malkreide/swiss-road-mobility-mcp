@@ -110,7 +110,7 @@ class TestSharedMobility:
     # Regressionswache fuer SFOE/sharedmobility#46. Die Quelle beantwortete die
     # Umkreissuche ohne Fahrzeugtyp vom 1. bis 12.10.2026 mit HTTP 500 (ein
     # alter Server hinter dem Hostnamen). Bis zur Behebung stand dieser Test
-    # als `xfail(strict=True)` und meldete sich am 13.10.2026 mit XPASS. Jetzt
+    # als `xfail(strict=True)` und meldete sich am 12.10.2026 mit XPASS. Jetzt
     # ist er ein gewoehnlicher Test: Faellt die Quelle zurueck, wird der
     # naechtliche Lauf rot. Der Umweg in `_identify_je_typ` faengt das fuer die
     # Nutzer ab; dieser Test sorgt dafuer, dass es jemand merkt.
