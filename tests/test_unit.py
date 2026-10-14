@@ -364,6 +364,83 @@ class TestHaltepunktAchsen:
         assert (bern["latitude"], bern["longitude"]) == (46.948823, 7.439123)
 
 
+class TestReisezeit:
+    """transport.opendata.ch schreibt `duration` als «00d01:11:00».
+
+    Die Werte unten sind die gemessenen vom 14.10.2026 (Zuerich–Bern,
+    Zuerich–Genf, Basel–Lugano). Bis dahin erwartete der Parser «HH:MM:SS»
+    und setzte jede Reisezeit auf 0.
+    """
+
+    @pytest.mark.parametrize(
+        ("roh", "minuten"),
+        [("00d01:11:00", 71), ("00d01:14:00", 74), ("00d02:51:00", 171), ("00d03:21:00", 201)],
+    )
+    def test_die_form_der_quelle(self, roh, minuten):
+        assert multimodal._dauer_in_sekunden(roh) == minuten * 60
+
+    def test_der_tagesteil_zaehlt(self):
+        assert multimodal._dauer_in_sekunden("01d00:05:00") == (24 * 60 + 5) * 60
+
+    def test_ohne_tagesteil_traegt_es_auch(self):
+        assert multimodal._dauer_in_sekunden("01:11:00") == 71 * 60
+
+    def test_ganze_sekunden_bleiben_sekunden(self):
+        assert multimodal._dauer_in_sekunden(4260) == 4260
+
+    @pytest.mark.parametrize("roh", [None, "", "abc", "1:2:3", True, 71.5])
+    def test_unlesbar_ist_unbekannt_nicht_null(self, roh):
+        """«0 min» waere eine Auskunft — und eine falsche."""
+        assert multimodal._dauer_in_sekunden(roh) is None
+
+    @respx.mock
+    async def test_die_verbindung_traegt_die_dauer_in_minuten(self):
+        respx.get(multimodal.CONNECTIONS_URL).respond(
+            200,
+            json={
+                "connections": [
+                    {
+                        "from": {"departure": "2026-10-14T07:44:00+0200"},
+                        "to": {"arrival": "2026-10-14T08:58:00+0200"},
+                        "duration": "00d01:14:00",
+                        "transfers": 0,
+                        "sections": [{"walk": {"duration": 1020}, "journey": None}],
+                    }
+                ]
+            },
+        )
+        [verbindung] = await multimodal._get_connections("Zürich HB", "Bern", limit=1)
+        assert verbindung["duration_min"] == 74
+        assert verbindung["sections"][0]["duration_min"] == 17
+
+    @staticmethod
+    def _plan_ohne_netz(monkeypatch, verbindungen):
+        from swiss_road_mobility_mcp import park_rail
+
+        async def halt(*a, **kw):
+            return {"id": "8503000", "name": "Zürich HB", "distance_from_search_km": 0.2}
+
+        async def leer(*a, **kw):
+            return {"facilities": [], "vehicles": []}
+
+        async def ov(*a, **kw):
+            return verbindungen
+
+        monkeypatch.setattr(multimodal, "_find_nearest_station", halt)
+        monkeypatch.setattr(multimodal, "_get_connections", ov)
+        monkeypatch.setattr(park_rail, "find_nearby_park_rail", leer)
+        monkeypatch.setattr(shared_mobility, "find_nearby_vehicles", leer)
+
+    @pytest.mark.parametrize(("minuten", "erwartet"), [(74, "Dauer 74 min"), (None, "Dauer unbekannt")])
+    async def test_der_reiseplan_nennt_die_dauer(self, monkeypatch, minuten, erwartet):
+        verbindung = {"departure": "07:44", "arrival": "08:58", "duration_min": minuten, "transfers": 0}
+        self._plan_ohne_netz(monkeypatch, [verbindung])
+        plan = await multimodal.plan_multimodal_trip(47.3769, 8.5417, "Bern")
+        texte = [schritt["description"] for schritt in plan["plan_steps"] if schritt["mode"] == "public_transport"]
+        assert texte and erwartet in texte[0], texte
+        assert "Dauer None" not in texte[0]
+
+
 # ===========================================================================
 # ev_charging
 # ===========================================================================

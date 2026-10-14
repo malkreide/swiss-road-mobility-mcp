@@ -23,6 +23,7 @@ transport.opendata.ch API:
 
 import asyncio
 import logging
+import re
 
 import httpx
 
@@ -154,6 +155,41 @@ async def _find_stations_by_name(query: str, limit: int = 5) -> list[dict]:
     return results
 
 
+# Die Dauer einer Verbindung, wie transport.opendata.ch sie schreibt:
+# Tage, ein «d», dann Stunden:Minuten:Sekunden — «00d01:11:00» (docs.html,
+# Connection Object: «duration … 00d00:43:00»). Gemessen am 14.10.2026 an
+# sieben Verbindungen (Zuerich–Bern, Zuerich–Genf, Basel–Lugano): alle in
+# dieser Form. Der Tagesteil bleibt optional, damit auch «01:11:00» traegt.
+_DAUER = re.compile(r"^(?:(\d+)d)?(\d+):(\d{2}):(\d{2})$")
+
+
+def _dauer_in_sekunden(roh: object) -> int | None:
+    """
+    `duration` einer Verbindung in Sekunden, oder `None`, wenn unlesbar.
+
+    Bis 14.10.2026 erwartete der Parser «HH:MM:SS» und scheiterte an jedem
+    «00d…»: `int("00d01")` wirft, und der Fehlerzweig setzte 0. Jede
+    Verbindung stand damit mit «Dauer 0 min» im Reiseplan.
+
+    `None` statt 0 fuer das Unlesbare: «0 Minuten» ist eine Auskunft, und
+    zwar eine falsche, die ein Modell ungeprueft weitergibt. «Unbekannt» ist
+    die richtige.
+    """
+    if roh is None or roh == "":
+        return None
+    if isinstance(roh, bool):
+        return None
+    if isinstance(roh, int):
+        return roh
+    if isinstance(roh, str):
+        treffer = _DAUER.match(roh.strip())
+        if treffer:
+            tage, stunden, minuten, sekunden = treffer.groups()
+            return ((int(tage or 0) * 24 + int(stunden)) * 60 + int(minuten)) * 60 + int(sekunden)
+    logger.warning("Unbekanntes Duration-Format: %r — Dauer bleibt unbekannt.", roh)
+    return None
+
+
 async def _get_connections(
     from_station: str,
     to_destination: str,
@@ -225,23 +261,8 @@ async def _get_connections(
                     }
                 )
 
-        # Bug #3 Fix: transport.opendata.ch gibt 'duration' als String
-        # im Format 'HH:MM:SS' zurück, nicht als Integer (Sekunden).
-        # Robuste Konvertierung: String → Sekunden → Minuten.
-        dur_raw = conn.get("duration", 0) or 0
-        if isinstance(dur_raw, str) and ":" in dur_raw:
-            try:
-                parts = dur_raw.split(":")
-                dur_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-            except (ValueError, IndexError):
-                logger.warning(f"Unbekanntes Duration-Format: '{dur_raw}', setze 0.")
-                dur_seconds = 0
-        else:
-            try:
-                dur_seconds = int(dur_raw)
-            except (TypeError, ValueError):
-                dur_seconds = 0
-        duration_min = dur_seconds // 60
+        dur_seconds = _dauer_in_sekunden(conn.get("duration"))
+        duration_min = None if dur_seconds is None else dur_seconds // 60
 
         connections.append(
             {
@@ -530,8 +551,12 @@ async def plan_multimodal_trip(
                     f"ÖV ab {connection_from}: "
                     f"Abfahrt {best_conn.get('departure', '?')}, "
                     f"Ankunft {best_conn.get('arrival', '?')}, "
-                    f"Dauer {best_conn.get('duration_min', '?')} min, "
-                    f"{best_conn.get('transfers', 0)} Umsteigen"
+                    + (
+                        f"Dauer {best_conn['duration_min']} min, "
+                        if best_conn.get("duration_min") is not None
+                        else "Dauer unbekannt, "
+                    )
+                    + f"{best_conn.get('transfers', 0)} Umsteigen"
                 ),
                 "connections": connections,
             }

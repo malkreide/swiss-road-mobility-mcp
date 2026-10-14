@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Behoben
 
+- **Jede Reisezeit im Reiseplan stand auf 0** (`road_multimodal_plan`).
+  transport.opendata.ch schreibt die Dauer einer Verbindung als
+  `00d01:11:00` (Tage, «d», Stunden:Minuten:Sekunden — so auch in der Doku);
+  der Parser erwartete `HH:MM:SS`, scheiterte an `00d01` und setzte 0. Der
+  Reiseplan meldete damit «Dauer 0 min». Jetzt wird das Format der Quelle
+  gelesen, mit optionalem Tagesteil. Eine unlesbare Dauer heisst neu
+  `duration_min: null` und «Dauer unbekannt» statt 0 — «0 Minuten» wäre eine
+  falsche Auskunft. Der Live-Test prüft die Dauer jetzt mit; bisher prüfte er
+  sie gar nicht.
 - **Der nächste ÖV-Haltepunkt war vertauscht oder fehlte** — in
   `road_mobility_snapshot` und `road_multimodal_plan`. Bei transport.opendata.ch
   ist `x` der Breitengrad und `y` der Längengrad (docs.html), der Server nahm
