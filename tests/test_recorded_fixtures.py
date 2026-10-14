@@ -319,6 +319,23 @@ async def test_die_umkreissuche_folgt_der_aufgezeichneten_quelle(quelle):
         assert len(quelle) == 1
 
 
+async def test_der_naechste_haltepunkt_liegt_beim_suchpunkt(quelle):
+    """transport.opendata.ch: `x` ist der Breitengrad — aus der Aufzeichnung belegt.
+
+    Bis 14.10.2026 schickte und las der Server `x` als Laengengrad. Die
+    Aufzeichnung vom 15.8.2026 zeigte die richtige Reihenfolge bereits
+    (`x: 46.94` fuer Bern), nur hielt sie niemand gegen den Code; am
+    13.10.2026 lieferte die Quelle fuer Zuerich HB deshalb «Ancona». Zuoberst
+    steht in der Aufzeichnung eine Adresse ohne `id` — auch die darf den
+    Haltepunkt nicht verdecken.
+    """
+    ergebnis = await _fahre("snapshot")
+    halt = ergebnis["nearest_station"]
+    assert halt, "kein Haltepunkt — die Adresse zuoberst hat ihn verdeckt?"
+    assert halt["id"], halt
+    assert halt["distance_from_search_km"] < 1.0, halt
+
+
 async def test_der_schnappschuss_fragt_mehrere_quellen(quelle):
     """Mehrere Quellen in einem Aufruf — der Grund fuer die Zuordnung nach Anfrage.
 

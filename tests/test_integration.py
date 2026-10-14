@@ -107,24 +107,13 @@ class TestSharedMobility:
         # Zürich HB hat immer irgendwas
         assert result["count"] > 0, "Am Zürich HB sollte es Sharing-Angebote geben"
 
-    # Wacht ueber SFOE/sharedmobility#46. Solange die Quelle die Umkreissuche
-    # ohne Fahrzeugtyp mit HTTP 500 beantwortet, scheitert dieser Test wie
-    # erwartet, und der Lauf bleibt gruen. Repariert sie es, laeuft er durch —
-    # und `strict=True` macht genau diesen Durchlauf rot. Das ist die Meldung:
-    # Der rote Lauf oeffnet das `upstream`-Issue in diesem Repo.
-    #
-    # `raises=AssertionError`, damit nur das Erwartete als erwartet gilt. Eine
-    # Absage der Quelle kommt unten als AssertionError an; alles andere (etwa
-    # eine Egress-Sperre) ist ein echter Fehler und bleibt rot.
-    @pytest.mark.xfail(
-        strict=True,
-        raises=AssertionError,
-        reason=(
-            "SFOE/sharedmobility#46: /identify ohne vehicle_type antwortet mit HTTP 500. "
-            "Laeuft dieser Test durch (XPASS), ist die Quelle repariert: "
-            "#46 pruefen, diesen Marker entfernen."
-        ),
-    )
+    # Regressionswache fuer SFOE/sharedmobility#46. Die Quelle beantwortete die
+    # Umkreissuche ohne Fahrzeugtyp vom 1. bis 12.10.2026 mit HTTP 500 (ein
+    # alter Server hinter dem Hostnamen). Bis zur Behebung stand dieser Test
+    # als `xfail(strict=True)` und meldete sich am 13.10.2026 mit XPASS. Jetzt
+    # ist er ein gewoehnlicher Test: Faellt die Quelle zurueck, wird der
+    # naechtliche Lauf rot. Der Umweg in `_identify_je_typ` faengt das fuer die
+    # Nutzer ab; dieser Test sorgt dafuer, dass es jemand merkt.
     @pytest.mark.asyncio
     async def test_umkreissuche_ohne_typ_traegt_wieder(self, client):
         """Die Abfrage, die der Umweg in `_identify_je_typ` ersetzt — direkt gestellt."""
@@ -137,7 +126,7 @@ class TestSharedMobility:
         try:
             raw = await shared_mobility._identify(client, params, [])
         except APIError as e:
-            raise AssertionError(f"Quelle scheitert weiter: HTTP {e.status_code}") from e
+            raise AssertionError(f"Rueckfall von SFOE/sharedmobility#46? HTTP {e.status_code}") from e
         assert isinstance(raw, list) and raw, "Quelle antwortet, aber ohne Treffer am Zuerich HB"
 
     @pytest.mark.asyncio

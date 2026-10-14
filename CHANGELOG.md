@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Behoben
 
+- **Der nächste ÖV-Haltepunkt war vertauscht oder fehlte** — in
+  `road_mobility_snapshot` und `road_multimodal_plan`. Bei transport.opendata.ch
+  ist `x` der Breitengrad und `y` der Längengrad (docs.html), der Server nahm
+  beides umgekehrt an, beim Senden wie beim Lesen. Die Quelle hatte die
+  vertauschte Anfrage lange stillschweigend richtig beantwortet; seit dem
+  13.10.2026 nimmt sie sie wörtlich und lieferte für Zürich HB «Ancona»
+  (4971 km), womit der Reiseplan die ÖV-Verbindung ab Ancona suchte. Davor
+  fehlte der Haltepunkt still: `type=station` wirkt nur zusammen mit `query`,
+  zuoberst kam eine Adresse ohne Koordinaten, und die Funktion gab `None`
+  zurück. Der Live-Test übersprang das als «nicht erreichbar». Jetzt: richtige
+  Achsen, erster Treffer mit `id` und Koordinaten, und kein Skip mehr bei
+  `None`. Dieselbe Vertauschung in der Namenssuche (`_find_stations_by_name`)
+  ist mitbehoben.
 - **`road_find_sharing` ohne Fahrzeugtyp lieferte nur noch HTTP 500** — und mit
   ihm verloren `road_mobility_snapshot` und `road_multimodal_plan` still ihre
   Sharing-Angaben. Ursache liegt bei der Quelle: `api.sharedmobility.ch`
@@ -31,10 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Live-Wachtest für SFOE/sharedmobility#46**
   (`test_umkreissuche_ohne_typ_traegt_wieder`): stellt die Umkreissuche ohne
-  Fahrzeugtyp direkt und ist als strikt erwartetes Scheitern markiert. Solange
-  die Quelle mit 500 antwortet, bleibt der nächtliche Lauf grün; sobald sie
-  repariert ist, wird er einmal rot und öffnet damit das `upstream`-Issue —
-  das ist die Meldung, dass der Marker weg kann.
+  Fahrzeugtyp direkt. Er stand zunächst als strikt erwartetes Scheitern und
+  meldete am 13.10.2026 mit XPASS, dass die Quelle repariert ist (behoben am
+  12.10.2026: der Hostname zeigte auf einen alten Server). Seither ist er ein
+  gewöhnlicher Live-Test gegen einen Rückfall.
 
 ### Geändert
 
@@ -42,7 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Der Fixture-Recorder zeichnet den HTTP-Status mit auf und spielt ihn ab;
   bisher wäre ein aufgezeichneter 500 als 200 wiedergegeben worden. Leere
   Antworten der Quelle stehen ausgewiesen im Nachweis. Fixtures neu
-  aufgezeichnet am 4.10.2026.
+  aufgezeichnet am 14.10.2026; die 500er-Antwort von sharedmobility.ch ist
+  damit aus dem Ordner verschwunden, weil die Quelle sie nicht mehr liefert —
+  den Ausweichpfad belegen jetzt die Unit-Tests.
 
 ## [0.6.0] - 2026-09-26
 

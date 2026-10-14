@@ -1,97 +1,107 @@
 [
   {
     "geometry": {
-      "x": 8.252358,
-      "y": 47.0311,
+      "x": 7.439382,
+      "y": 46.94774,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "nextbike_ch",
-      "provider_name": "nextbike Switzerland",
-      "provider_phone": "0041415080800",
-      "provider_timezone": "Europe/Brussels",
-      "provider_apps_ios_store_uri": "https://apps.apple.com/app/id504288371",
-      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=de.nextbike",
-      "id": "nextbike_ch:373982224",
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:1c741450-02ed-412e-ce4d-bfd470da7281",
       "available": true,
       "pickup_type": "station_based",
-      "station_name": "Busschleife Obernau / Hubelstrasse ",
+      "station_name": "Berner Generationenhaus",
+      "station_address": "Bahnhofplatz 2, Postfach",
+      "station_postcode": "3011",
       "station_status_installed": true,
-      "station_status_renting": true,
-      "station_status_returning": true,
-      "station_status_num_vehicle_available": 0,
-      "station_region_id": "nextbike_ch:491"
+      "station_status_renting": false,
+      "station_status_returning": false,
+      "station_status_num_vehicle_available": 1,
+      "station_region_id": "carvelo2go:b33b7cef-c74d-4789-9a31-8586dcf47e11",
+      "vehicle_type": [
+        "E-CargoBike"
+      ]
     },
-    "featureId": "nextbike_ch:373982224",
-    "id": "nextbike_ch:373982224",
+    "featureId": "carvelo2go:1c741450-02ed-412e-ce4d-bfd470da7281",
+    "id": "carvelo2go:1c741450-02ed-412e-ce4d-bfd470da7281",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   },
   {
     "geometry": {
-      "x": 7.390321,
-      "y": 46.94017,
+      "x": 7.43624,
+      "y": 46.94668,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "voiscooters.com",
-      "provider_name": "Voi Technology AB",
-      "provider_timezone": "CET",
-      "provider_apps_ios_store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
-      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
-      "id": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:98c0dadf-cbe8-486e-f679-2a909a4cda0f",
       "available": true,
       "pickup_type": "station_based",
-      "station_name": "Bernstrasse 100",
+      "station_name": "BoulderBad Muubeeri Bern",
+      "station_address": "",
+      "station_postcode": "3011",
       "station_status_installed": true,
       "station_status_renting": true,
       "station_status_returning": true,
-      "station_status_num_vehicle_available": 0,
-      "station_region_id": "voiscooters.com:null",
+      "station_status_num_vehicle_available": 1,
+      "station_region_id": "carvelo2go:b33b7cef-c74d-4789-9a31-8586dcf47e11",
       "vehicle_type": [
-        "E-Scooter",
-        "E-Bike"
+        "E-CargoBike"
       ]
     },
-    "featureId": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
-    "id": "voiscooters.com:02ee91c8-3c06-43b4-b52d-8b00e6c0aa8f",
+    "featureId": "carvelo2go:98c0dadf-cbe8-486e-f679-2a909a4cda0f",
+    "id": "carvelo2go:98c0dadf-cbe8-486e-f679-2a909a4cda0f",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   },
   {
     "geometry": {
-      "x": 7.448403,
-      "y": 46.94205,
+      "x": 7.4235992,
+      "y": 46.944508,
       "spatialReference": {
         "wkid": 4326
       }
     },
     "attributes": {
-      "provider_id": "voiscooters.com",
-      "provider_name": "Voi Technology AB",
-      "provider_timezone": "CET",
-      "provider_apps_ios_store_uri": "https://apps.apple.com/app/id1395921017?mt=8",
-      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=io.voiapp.voi&hl=en&gl=US",
-      "id": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
+      "provider_id": "carvelo2go",
+      "provider_name": "carvelo eCargo-Bike Sharing",
+      "provider_phone": "058 827 34 14",
+      "provider_timezone": "Europe/Zurich",
+      "provider_apps_ios_store_uri": "https://itunes.apple.com/ch/app/carvelo2go/id1272672674?mt=8",
+      "provider_apps_android_store_uri": "https://play.google.com/store/apps/details?id=ch.carvelo2go.app",
+      "id": "carvelo2go:f80bbc39-6071-4756-c596-2c124d54ebfd",
       "available": true,
       "pickup_type": "station_based",
-      "station_name": "Bernastrasse 12b",
+      "station_name": "BrockiShop Bern",
+      "station_address": "Schwarztorstrasse 115A",
+      "station_postcode": "3007",
       "station_status_installed": true,
-      "station_status_renting": true,
-      "station_status_returning": true,
-      "station_status_num_vehicle_available": 0,
-      "station_region_id": "voiscooters.com:null",
+      "station_status_renting": false,
+      "station_status_returning": false,
+      "station_status_num_vehicle_available": 2,
+      "station_region_id": "carvelo2go:b33b7cef-c74d-4789-9a31-8586dcf47e11",
       "vehicle_type": [
-        "E-Scooter",
-        "E-Bike"
+        "E-Car",
+        "E-CargoBike"
       ]
     },
-    "featureId": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
-    "id": "voiscooters.com:5f12b49d-a24f-4102-a1eb-8fefc86d2f82",
+    "featureId": "carvelo2go:f80bbc39-6071-4756-c596-2c124d54ebfd",
+    "id": "carvelo2go:f80bbc39-6071-4756-c596-2c124d54ebfd",
     "layerBodId": "ch.bfe.sharedmobility",
     "layerName": "Shared Mobility Angebote"
   }

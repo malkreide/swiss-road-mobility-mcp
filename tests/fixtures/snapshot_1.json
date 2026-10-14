@@ -2,14 +2,14 @@
   "stations": [
     {
       "id": null,
-      "name": "Neuengassunterführung 2, Bern",
+      "name": "Bahnhofplatz 10, 3011 Bern",
       "score": null,
       "coordinate": {
         "type": "WGS84",
-        "x": null,
-        "y": null
+        "x": 46.948928,
+        "y": 7.439786
       },
-      "distance": 3.587079919296057,
+      "distance": 16.23068721338451,
       "icon": null
     },
     {
@@ -18,10 +18,10 @@
       "score": null,
       "coordinate": {
         "type": "WGS84",
-        "x": 46.948823,
-        "y": 7.439123
+        "x": 46.948831,
+        "y": 7.439129
       },
-      "distance": 0,
+      "distance": 40,
       "icon": "train"
     },
     {
@@ -30,10 +30,10 @@
       "score": null,
       "coordinate": {
         "type": "WGS84",
-        "x": 46.948994,
-        "y": 7.438519
+        "x": 46.948997,
+        "y": 7.438527
       },
-      "distance": 83,
+      "distance": 81,
       "icon": "bus"
     }
   ]

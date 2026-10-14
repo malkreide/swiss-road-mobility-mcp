@@ -30,7 +30,7 @@
         },
         {
           "EvseID": "CH*ECUEALVZL89BFEPYQ8GS54HMYV5JVX",
-          "EVSEStatus": "Available"
+          "EVSEStatus": "Occupied"
         }
       ],
       "OperatorID": "CH*ECU",
@@ -48,7 +48,7 @@
         },
         {
           "EvseID": "CHFASE4150403",
-          "EVSEStatus": "Occupied"
+          "EVSEStatus": "Available"
         }
       ],
       "OperatorID": "CH*FASTNED",
