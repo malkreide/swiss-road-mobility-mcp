@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-14
+
+Fehlerbehebungen für die Sharing-Suche, den nächsten ÖV-Haltepunkt und die
+Reisezeiten im Reiseplan. Alle drei lieferten falsche oder keine Daten, zum
+Teil still und ohne Fehlermeldung. Keine brechende Änderung.
+
+> **Upgrade-Hinweis.** Wer die Ausgabe von `road_multimodal_plan` maschinell
+> liest: `duration_min` einer Verbindung kann jetzt `null` sein, wenn die
+> Quelle eine unlesbare Dauer liefert. Bisher stand dort in jedem Fall 0 —
+> auch bei lesbarer Dauer. `road_find_sharing` trägt neu das Feld
+> `completeness`, wenn die Antwort unvollständig ist.
+
 ### Behoben
 
 - **Jede Reisezeit im Reiseplan stand auf 0** (`road_multimodal_plan`).
