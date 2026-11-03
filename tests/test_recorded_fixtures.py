@@ -42,6 +42,8 @@ from fixture_data import (
 )
 
 from swiss_road_mobility_mcp import api_infrastructure, server
+from swiss_road_mobility_mcp.errors import CODE_UPSTREAM
+from swiss_road_mobility_mcp.shared_mobility import BASE_URL as SHARING_URL
 
 BERN = {"latitude": 46.9490, "longitude": 7.4396}
 
@@ -355,12 +357,40 @@ async def test_eine_leere_trefferliste_bleibt_eine_leere_trefferliste():
 
     Das darf nicht als Fehler herauskommen — sonst kann das Modell einen echten
     Negativtreffer nicht von einem Ausfall unterscheiden.
+
+    Bis zum 3.11.2026 beantwortete der Stub hier JEDE Anfrage mit `[]`. Das ist
+    genau der Zustand, in dem die Quelle am 31.10. und 1.11.2026 gestoert war —
+    auch ihr Anbieterverzeichnis war leer. Ein echter Negativtreffer ist ein
+    leerer Umkreis bei vollem Verzeichnis; das Verzeichnis kommt deshalb aus
+    der Aufzeichnung. Den gestoerten Zustand prueft der Test darunter.
     """
     server._client = None
+    respx.get(f"{SHARING_URL}/providers").mock(
+        return_value=httpx.Response(200, text=fixture_text("sharing_providers_1.json"))
+    )
     respx.route().mock(return_value=httpx.Response(200, text=json.dumps([])))
     ergebnis = await _fahre("sharing_nearby")
     assert isinstance(ergebnis, dict)
     assert not ergebnis.get("error"), "eine leere Suche ist kein Fehler"
+    assert ergebnis["count"] == 0
+    assert ergebnis["hint"].startswith("Keine Treffer. Geprüft:"), ergebnis["hint"]
+    server._client = None
+
+
+@respx.mock
+async def test_eine_ueberall_leere_quelle_ist_ein_ausfall():
+    """Der Zustand vom 31.10. und 1.11.2026: jede Abfrage `200 []`, auch `/providers`.
+
+    Der Server meldete damals «0 Fahrzeuge» — eine Auskunft, die falsch war.
+    Jetzt muss es ein Fehler sein, und er muss sagen, dass die Leere nicht als
+    Auskunft weitergegeben werden darf.
+    """
+    server._client = None
+    respx.route().mock(return_value=httpx.Response(200, text=json.dumps([])))
+    ergebnis = await _fahre("sharing_nearby")
+    assert ergebnis.get("isError"), f"eine gestoerte Quelle kam als Ergebnis heraus: {ergebnis}"
+    assert ergebnis["error"]["code"] == CODE_UPSTREAM
+    assert "Störung" in ergebnis["error"]["message"]
     server._client = None
 
 

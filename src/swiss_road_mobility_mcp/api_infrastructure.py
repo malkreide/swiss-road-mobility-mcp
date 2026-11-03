@@ -237,6 +237,7 @@ class MobilityHTTPClient:
         cache_ttl: float = 60.0,
         use_cache: bool = True,
         limiter_name: str | None = None,
+        cache_empty: bool = True,
     ) -> Any:
         """
         GET-Request mit Cache und Rate Limiting.
@@ -246,6 +247,12 @@ class MobilityHTTPClient:
         2. Rate Limit prüfen → Warten falls nötig.
         3. Request senden → JSON parsen.
         4. Cache befüllen → Für nächste Anfrage.
+
+        `cache_empty=False` laesst eine leere Antwort (`[]`, `{}`) aus dem
+        Cache. Fuer eine Quelle, bei der «leer» nie eine Auskunft ist, sondern
+        nur eine Stoerung sein kann: Sonst haelt der Cache die Stoerung noch
+        fest, wenn die Quelle laengst wieder liefert — eine Stunde lang beim
+        Anbieterverzeichnis von sharedmobility.ch.
         """
         params = params or {}
         cache_params = {"url": url, **params}
@@ -271,7 +278,8 @@ class MobilityHTTPClient:
 
         # 4. Parse & Cache
         result = response.json()
-        self._cache.set(cache_prefix, cache_params, result, cache_ttl)
+        if cache_empty or result:
+            self._cache.set(cache_prefix, cache_params, result, cache_ttl)
         return result
 
     async def _get_with_retries(self, url: str, params: dict) -> httpx.Response:

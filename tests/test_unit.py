@@ -17,6 +17,7 @@ Coverage per layer:
 import httpx
 import pytest
 import respx
+from fixture_data import fixture_json, fixture_text
 
 from swiss_road_mobility_mcp import api_infrastructure, ev_charging, geo_admin, multimodal, shared_mobility
 from swiss_road_mobility_mcp.api_infrastructure import (
@@ -88,6 +89,33 @@ class TestInfraHTTP:
         assert first == second == {"ok": True}
         assert route.call_count == 1  # second call served from cache
 
+    @respx.mock
+    async def test_get_json_cached_eine_leere_antwort_standardmaessig(self, client):
+        """Die Vorgabe bleibt: Fuer die meisten Quellen ist `[]` eine Auskunft."""
+        route = respx.get("https://data.geo.admin.ch/data").respond(200, json=[])
+        for _ in range(2):
+            assert await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_ttl=60) == []
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_get_json_ohne_cache_empty_fragt_bei_leerer_antwort_erneut(self, client):
+        """Sonst haelt der Cache eine Stoerung fest, die die Quelle laengst behoben hat."""
+        route = respx.get("https://data.geo.admin.ch/data").mock(
+            side_effect=[httpx.Response(200, json=[]), httpx.Response(200, json=[1])]
+        )
+        erste = await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_empty=False)
+        zweite = await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_empty=False)
+        assert (erste, zweite) == ([], [1])
+        assert route.call_count == 2
+
+    @respx.mock
+    async def test_get_json_ohne_cache_empty_cached_eine_gefuellte_antwort(self, client):
+        """Gegenprobe: Ausgelassen wird nur die leere Antwort, nicht jede."""
+        route = respx.get("https://data.geo.admin.ch/data").respond(200, json=[1])
+        for _ in range(2):
+            await client.get_json("https://data.geo.admin.ch/data", cache_prefix="t", cache_empty=False)
+        assert route.call_count == 1
+
 
 # ===========================================================================
 # shared_mobility
@@ -126,11 +154,17 @@ class TestSharedMobility:
 
     @respx.mock
     async def test_find_nearby_malformed_response(self, client):
-        # API returns a dict instead of the expected list -> graceful hint.
+        """Ein unbekanntes Format ist ein Fehler, keine leere Trefferliste.
+
+        Bis zum 3.11.2026 stand hier `count == 0` plus Hinweis. Ein Modell gibt
+        die Null weiter und laesst den Hinweis liegen — «keine Fahrzeuge» von
+        einer Quelle, die nur ihr Format geaendert hat.
+        """
         respx.get(f"{BASE_URL}/identify").respond(200, json={"unexpected": "shape"})
-        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
-        assert result["count"] == 0
-        assert "hint" in result
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert "unbekannten Format" in str(fehler.value)
+        assert "dict statt Liste" in str(fehler.value)
 
     @respx.mock
     async def test_find_nearby_500_raises_apierror(self, client):
@@ -155,6 +189,171 @@ class TestSharedMobility:
         assert result["count"] == 1
         assert result["providers"][0]["name"] == "PubliBike"
         assert "Bundesamt für Energie" in result["source"]
+
+
+class TestLeereAntwort:
+    """Ist eine leere Antwort eine Auskunft oder eine Stoerung?
+
+    Am Endpunkt selbst nicht zu unterscheiden — gemessen am 3.11.2026: ein
+    Unsinnswort, der Piz Bernina und ein unbekannter Fahrzeugtyp liefern alle
+    `200 []`, byte-gleich mit der Stoerung vom 31.10. und 1.11.2026. Es
+    entscheidet das Anbieterverzeichnis, das nie berechtigt leer ist. Das volle
+    Verzeichnis hier ist die echte Aufzeichnung, nicht von Hand geschrieben.
+    """
+
+    @staticmethod
+    def _verzeichnis() -> httpx.Response:
+        return httpx.Response(200, text=fixture_text("sharing_providers_1.json"))
+
+    @staticmethod
+    def _ohne_warten(monkeypatch) -> None:
+        async def _kein_schlaf(sekunden: float) -> None: ...
+
+        monkeypatch.setattr(api_infrastructure, "_sleep", _kein_schlaf)
+
+    @respx.mock
+    async def test_leerer_umkreis_bei_vollem_verzeichnis_ist_eine_auskunft(self, client):
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=9.9083, latitude=46.3822)
+        anzahl = len(fixture_json("sharing_providers_1.json"))
+        assert result["count"] == 0
+        assert result["hint"].startswith("Keine Treffer. Geprüft:")
+        assert f"{anzahl} Anbieter" in result["hint"]
+        assert "Echtzeit" not in result["hint"], "der Echtzeit-Hinweis las sich wie eine Bestaetigung der Leere"
+
+    @respx.mock
+    async def test_leerer_umkreis_bei_leerem_verzeichnis_ist_eine_stoerung(self, client):
+        """Der 31.10. und 1.11.2026: Der Server meldete «0 Fahrzeuge am Zuerich HB»."""
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").respond(200, json=[])
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.5402, latitude=47.3782)
+        assert "Störung" in str(fehler.value)
+        assert "rate limit" not in str(fehler.value).lower(), "sonst stuft upstream_error es als Rate Limit ein"
+
+    @respx.mock
+    async def test_ein_gefuelltes_ergebnis_fragt_das_verzeichnis_nicht(self, client):
+        """Die Pruefung kostet im Normalfall nichts — auch nichts am Tuersteher."""
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[_vehicle("v1", 8.54, 47.37)])
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert verzeichnis.call_count == 0
+        assert result["hint"].startswith("Ergebnisse zeigen Echtzeit")
+
+    @respx.mock
+    async def test_nur_belegte_fahrzeuge_sind_eine_auskunft_ohne_pruefung(self, client):
+        """Geprueft wird die rohe Antwort: gemeldet, aber nicht frei, hat die Quelle geliefert."""
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[_vehicle("v1", 8.54, 47.37, available=False)])
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37, only_available=True)
+        assert result["count"] == 0
+        assert verzeichnis.call_count == 0
+        assert result["hint"].startswith("Ergebnisse zeigen Echtzeit")
+
+    @respx.mock
+    async def test_ist_das_verzeichnis_nicht_erreichbar_bleibt_die_leere_unbestaetigt(self, monkeypatch, client):
+        """Nicht pruefbar ist nicht gestoert — aber auch keine bestaetigte Leere."""
+        self._ohne_warten(monkeypatch)
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").respond(503, text="down")
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert result["count"] == 0
+        assert "unbestätigt" in result["hint"]
+        assert "503" in result["hint"]
+
+    @respx.mock
+    async def test_ein_unlesbares_verzeichnis_bringt_keinen_rohtext_ins_ergebnis(self, client):
+        """Der Hinweis steht in einem Erfolg, der ans Modell geht — Rohtext gehoert nicht hinein."""
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").respond(200, text="<html>Wartung</html>")
+        result = await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert "unbestätigt" in result["hint"]
+        assert "Wartung" not in result["hint"] and "Expecting value" not in result["hint"], result["hint"]
+
+    @respx.mock
+    async def test_ein_altes_volles_verzeichnis_verdeckt_keine_stoerung(self, client):
+        """`list_providers` cacht eine Stunde. Die Pruefung darf davon nicht leben.
+
+        Ein Verzeichnis, das vor 59 Minuten voll war, sagt nichts darueber, ob
+        die Quelle jetzt liefert.
+        """
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(
+            side_effect=[self._verzeichnis(), httpx.Response(200, json=[])]
+        )
+        respx.get(f"{BASE_URL}/identify").respond(200, json=[])
+        await shared_mobility.list_providers(client)  # Stundencache: voll
+        with pytest.raises(APIError):
+            await shared_mobility.find_nearby_vehicles(client, longitude=8.54, latitude=47.37)
+        assert verzeichnis.call_count == 2
+
+    @respx.mock
+    async def test_zwei_leere_antworten_fragen_das_verzeichnis_einmal(self, client):
+        """Ein volles Verzeichnis haelt eine Minute — die Pruefung kostet hoechstens eine Abfrage je Minute."""
+        respx.get(f"{BASE_URL}/find").respond(200, json=[])
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        await shared_mobility.search_stations(client, search_text="zzqx")
+        await shared_mobility.search_stations(client, search_text="yyqx")
+        assert verzeichnis.call_count == 1
+
+    @respx.mock
+    async def test_eine_leere_suche_bei_vollem_verzeichnis_ist_eine_auskunft(self, client):
+        respx.get(f"{BASE_URL}/find").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        result = await shared_mobility.search_stations(client, search_text="zzqxgibtesnicht")
+        assert result["count"] == 0
+        assert result["hint"].startswith("Keine Treffer. Geprüft:")
+
+    @respx.mock
+    async def test_eine_gefuellte_suche_traegt_keinen_hinweis(self, client):
+        respx.get(f"{BASE_URL}/find").respond(200, json=[_vehicle("s1", 8.54, 47.37)])
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(return_value=self._verzeichnis())
+        result = await shared_mobility.search_stations(client, search_text="Bahnhof")
+        assert "hint" not in result
+        assert verzeichnis.call_count == 0
+
+    @respx.mock
+    async def test_eine_leere_suche_bei_leerem_verzeichnis_ist_eine_stoerung(self, client):
+        respx.get(f"{BASE_URL}/find").respond(200, json=[])
+        respx.get(f"{BASE_URL}/providers").respond(200, json=[])
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.search_stations(client, search_text="Bahnhof")
+        assert "Störung" in str(fehler.value)
+
+    @respx.mock
+    async def test_ein_leeres_verzeichnis_ist_keine_anbieterliste(self, client):
+        """Der Server meldete «0 Anbieter, Quelle BFE» — belegt und falsch."""
+        respx.get(f"{BASE_URL}/providers").respond(200, json=[])
+        with pytest.raises(APIError) as fehler:
+            await shared_mobility.list_providers(client)
+        assert "Störung" in str(fehler.value)
+
+    @respx.mock
+    async def test_ein_leeres_verzeichnis_bleibt_nicht_im_cache(self, client):
+        """Sonst meldete der Server noch eine Stunde Stoerung, wenn die Quelle laengst wieder liefert."""
+        verzeichnis = respx.get(f"{BASE_URL}/providers").mock(
+            side_effect=[httpx.Response(200, json=[]), self._verzeichnis()]
+        )
+        with pytest.raises(APIError):
+            await shared_mobility.list_providers(client)
+        result = await shared_mobility.list_providers(client)
+        assert result["count"] == len(fixture_json("sharing_providers_1.json"))
+        assert verzeichnis.call_count == 2
+
+    @respx.mock
+    @pytest.mark.parametrize(
+        ("endpunkt", "aufruf"),
+        [
+            ("find", lambda c: shared_mobility.search_stations(c, search_text="Bahnhof")),
+            ("providers", lambda c: shared_mobility.list_providers(c)),
+        ],
+    )
+    async def test_ein_unbekanntes_format_ist_ein_fehler(self, client, endpunkt, aufruf):
+        """Bis zum 3.11.2026 wurde daraus still `count: 0` — wie ein leerer Ort."""
+        respx.get(f"{BASE_URL}/{endpunkt}").respond(200, json={"unexpected": "shape"})
+        with pytest.raises(APIError) as fehler:
+            await aufruf(client)
+        assert "unbekannten Format" in str(fehler.value)
 
 
 class TestUmkreissucheJeTyp:
@@ -189,6 +388,10 @@ class TestUmkreissucheJeTyp:
             return httpx.Response(200, json=je_typ.get(typ, []))
 
         respx.get(f"{BASE_URL}/identify").mock(side_effect=antwort)
+        # Bleibt die Zusammensetzung leer, fragt der Server das Verzeichnis, ob
+        # die Leere eine Auskunft ist. Ohne diese Route lief das in einen
+        # ungemockten Aufruf, dessen respx-Fehler still im Hinweis verschwand.
+        respx.get(f"{BASE_URL}/providers").respond(200, text=fixture_text("sharing_providers_1.json"))
         return gefragt
 
     @respx.mock

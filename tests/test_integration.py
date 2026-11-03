@@ -131,7 +131,14 @@ class TestSharedMobility:
 
     @pytest.mark.asyncio
     async def test_find_nearby_with_filter(self, client):
-        """Filtere nach E-Bike."""
+        """Filtere nach E-Bike.
+
+        Bis zum 3.11.2026 stand hier nur «wenn Ergebnisse, dann nur E-Bikes».
+        Bei einer leeren Liste laeuft die Schleife nie: Am 31.10. und 1.11.2026,
+        als die Quelle auf jede Abfrage `[]` lieferte, blieb dieser Test als
+        einziger der Sharing-Tests gruen. Gemessen am 3.11.2026: 50 E-Bikes
+        im Umkreis von 1 km um den HB.
+        """
         result = await find_nearby_vehicles(
             client,
             longitude=ZH_HB_LON,
@@ -140,10 +147,21 @@ class TestSharedMobility:
             vehicle_type="E-Bike",
             only_available=False,
         )
-        assert "count" in result
-        # Wenn Ergebnisse, dann nur E-Bikes
-        for v in result.get("vehicles", []):
+        assert result["count"] > 0, "Im Umkreis von 2 km um den HB sollte es E-Bikes geben"
+        for v in result["vehicles"]:
             assert "E-Bike" in v.get("vehicle_type", [])
+
+    @pytest.mark.asyncio
+    async def test_eine_leere_suche_wird_gegen_das_verzeichnis_geprueft(self, client):
+        """Der Pruefweg gegen die echte Quelle: leere Suche, volles Verzeichnis.
+
+        Faellt die Quelle aus wie am 31.10.2026, wirft die Suche statt eines
+        «keine Treffer» — dann ist dieser Test rot, und zwar mit dem Wort
+        «Störung» in der Meldung statt mit einer Null.
+        """
+        result = await search_stations(client, search_text="zzqxgibtesnicht")
+        assert result["count"] == 0
+        assert result["hint"].startswith("Keine Treffer. Geprüft:"), result["hint"]
 
     @pytest.mark.asyncio
     async def test_search_stations(self, client):

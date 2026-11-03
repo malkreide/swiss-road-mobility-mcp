@@ -50,6 +50,93 @@ _EINZELN_ABFRAGBAR = tuple(t for t in VEHICLE_TYPES if t != "Other")
 # Pickup-Typen
 PICKUP_TYPES = ["free_floating", "station_based"]
 
+# Der Hinweis zu einem gefuellten Ergebnis. Zu einem leeren gehoert er nicht:
+# Dort las er sich wie eine Bestaetigung, dass die Leere echt sei.
+_HINWEIS_ECHTZEIT = "Ergebnisse zeigen Echtzeit-Verfügbarkeit. Nutze die App-Links zur direkten Buchung beim Anbieter."
+
+# Eine leere Antwort der Quelle ist entweder eine Auskunft oder eine Stoerung,
+# und am Endpunkt selbst ist sie nicht zu unterscheiden. Gemessen am 3.11.2026:
+# ein Unsinnswort in `/find`, der Piz Bernina in `/identify` und ein unbekannter
+# Fahrzeugtyp antworten alle mit HTTP 200 und `[]` — byte-gleich mit dem, was
+# die Quelle am 31.10. und 1.11.2026 auf JEDE Abfrage lieferte, auch auf
+# `/providers`. Unterscheiden laesst es sich nur am Anbieterverzeichnis: Das ist
+# nie berechtigt leer (am 3.11.2026: 46 Anbieter), waehrend der Stoerung war es
+# das.
+_STOERUNG = (
+    "sharedmobility.ch antwortet, liefert aber keine Daten: Auch das Anbieterverzeichnis "
+    "ist leer, das sonst alle Schweizer Sharing-Anbieter führt. Das ist eine Störung der "
+    "Quelle und keine Auskunft — nicht als «keine Treffer» oder «keine Anbieter» "
+    "weitergeben. Später erneut versuchen."
+)
+
+# Wie alt das Verzeichnis hoechstens sein darf, das ueber eine leere Antwort
+# entscheidet. Nicht die Stunde von `list_providers`: Ein Verzeichnis, das vor
+# 59 Minuten voll war, sagt nichts darueber, ob die Quelle JETZT liefert — so
+# alt darf auch die Antwort von `/identify` nicht sein, die es einordnet.
+_PRUEF_TTL = 60.0
+
+
+def _formatfehler(endpunkt: str, raw: Any) -> APIError:
+    """Eine Antwort, die keine Liste ist. Nicht «0 Treffer»: Das waere eine Auskunft.
+
+    Bis zum 3.11.2026 wurde daraus still `count: 0` — von einer Quelle, die ihr
+    Format geaendert hat, nicht zu unterscheiden von einem leeren Ort. Kein Rat,
+    es spaeter erneut zu versuchen: Ein geaendertes Format bleibt geaendert, bis
+    der Server angepasst ist.
+    """
+    return APIError(
+        f"sharedmobility.ch {endpunkt} antwortete in einem unbekannten Format "
+        f"({type(raw).__name__} statt Liste). Die Antwort ist nicht auswertbar — "
+        "das ist keine Auskunft «keine Treffer»."
+    )
+
+
+async def _anbieterverzeichnis(client: MobilityHTTPClient, *, cache_prefix: str, cache_ttl: float) -> list:
+    """`/providers`, roh. Eine leere Liste wird nie gecacht (siehe `_STOERUNG`)."""
+    try:
+        raw = await client.get_json(
+            f"{BASE_URL}/providers",
+            cache_prefix=cache_prefix,
+            cache_ttl=cache_ttl,
+            cache_empty=False,
+            limiter_name="sharedmobility",
+        )
+    except APIError:
+        raise
+    except Exception as e:
+        raise APIError(f"Shared Mobility Anbieterliste nicht abrufbar: {e}")
+    if not isinstance(raw, list):
+        raise _formatfehler("/providers", raw)
+    return raw
+
+
+async def _leere_antwort_einordnen(client: MobilityHTTPClient) -> str:
+    """Auskunft oder Stoerung? Wirft bei Stoerung, sonst der Hinweis zum leeren Ergebnis.
+
+    Kostet nur etwas, wenn die Antwort leer war: Ein gefuelltes Ergebnis braucht
+    keine Pruefung, und der Normalfall fragt das Verzeichnis nie.
+    """
+    try:
+        anbieter = await _anbieterverzeichnis(client, cache_prefix="sharing_providers_probe", cache_ttl=_PRUEF_TTL)
+    except APIError as e:
+        # Nicht pruefbar ist nicht dasselbe wie gestoert: Das leere Ergebnis
+        # bleibt stehen, aber ausdruecklich unbestaetigt. Genannt wird nur der
+        # Status, nicht der Text: `_anbieterverzeichnis` verpackt jede Exception
+        # samt Rohtext, und der landete hier in einem ERFOLGREICHEN Ergebnis.
+        grund = f"HTTP {e.status_code}" if e.status_code else "nicht abrufbar"
+        return (
+            f"Keine Treffer. Ob die Quelle gerade Daten führt, liess sich nicht prüfen "
+            f"(Anbieterverzeichnis: {grund}). Die leere Antwort ist deshalb unbestätigt — "
+            "nicht als «hier gibt es nichts» weitergeben."
+        )
+    if not anbieter:
+        raise APIError(_STOERUNG)
+    return (
+        f"Keine Treffer. Geprüft: Die Quelle ist erreichbar und führt derzeit {len(anbieter)} "
+        "Anbieter. Eine Störung der ganzen Quelle ist damit ausgeschlossen; die leere Antwort "
+        "gilt als ihre Auskunft."
+    )
+
 
 def _format_vehicle(item: dict) -> dict:
     """
@@ -157,7 +244,12 @@ async def find_nearby_vehicles(
         raw, vollstaendigkeit = await _identify_je_typ(client, params, filters, ausloeser=e)
 
     if not isinstance(raw, list):
-        return {"count": 0, "vehicles": [], "hint": "Unerwartetes API-Format."}
+        raise _formatfehler("/identify", raw)
+
+    # Geprueft wird die ROHE Antwort, vor `only_available`: Sind Fahrzeuge
+    # gemeldet, aber keines frei, hat die Quelle geliefert — das ist eine
+    # Auskunft und braucht keine Pruefung.
+    hinweis = await _leere_antwort_einordnen(client) if not raw else _HINWEIS_ECHTZEIT
 
     # Formatieren und optional filtern
     vehicles = [_format_vehicle(item) for item in raw]
@@ -190,7 +282,7 @@ async def find_nearby_vehicles(
         "count": len(vehicles),
         "by_type": type_counts,
         "vehicles": vehicles[:50],  # Max 50 Ergebnisse für Token-Effizienz
-        "hint": ("Ergebnisse zeigen Echtzeit-Verfügbarkeit. Nutze die App-Links zur direkten Buchung beim Anbieter."),
+        "hint": hinweis,
     }
     if vollstaendigkeit is not None:
         ergebnis["completeness"] = vollstaendigkeit
@@ -355,15 +447,18 @@ async def search_stations(
         raise APIError(f"Shared Mobility Suche fehlgeschlagen: {e}")
 
     if not isinstance(raw, list):
-        return {"count": 0, "stations": []}
+        raise _formatfehler("/find", raw)
 
     stations = [_format_vehicle(item) for item in raw[:limit]]
 
-    return {
+    ergebnis: dict[str, Any] = {
         "search_text": search_text,
         "count": len(stations),
         "stations": stations,
     }
+    if not raw:
+        ergebnis["hint"] = await _leere_antwort_einordnen(client)
+    return ergebnis
 
 
 async def list_providers(client: MobilityHTTPClient) -> dict:
@@ -373,20 +468,12 @@ async def list_providers(client: MobilityHTTPClient) -> dict:
     Metapher: Wie das Verzeichnis an der Infotafel –
     wer bietet was an, und welche Fahrzeugtypen gibt es?
     """
-    try:
-        raw = await client.get_json(
-            f"{BASE_URL}/providers",
-            cache_prefix="sharing_providers",
-            cache_ttl=3600.0,  # 1h – Anbieter ändern sich kaum
-            limiter_name="sharedmobility",
-        )
-    except APIError:
-        raise
-    except Exception as e:
-        raise APIError(f"Shared Mobility Anbieterliste nicht abrufbar: {e}")
-
-    if not isinstance(raw, list):
-        return {"count": 0, "providers": []}
+    # 1h – Anbieter ändern sich kaum. Eine leere Liste bleibt draussen.
+    raw = await _anbieterverzeichnis(client, cache_prefix="sharing_providers", cache_ttl=3600.0)
+    if not raw:
+        # Am 31.10. und 1.11.2026 hiess das `count: 0` samt Quelle BFE — eine
+        # belegte Auskunft, die falsch war.
+        raise APIError(_STOERUNG)
 
     providers = []
     for p in raw:
