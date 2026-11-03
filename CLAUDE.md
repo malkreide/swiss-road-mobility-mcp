@@ -328,11 +328,63 @@ dass alles auf 3.13 lief. (Im Portfolio nicht selbstverständlich:
 steht nicht da, es gilt also der Standard: Eine rote 3.11 bricht 3.12 und
 3.13 ab, bevor sie etwas sagen.
 
-**Live-Tests:** `.github/workflows/live-tests.yml` läuft nächtlich per Cron
+**Live-Tests:** `.github/workflows/live-tests.yml` läuft täglich per Cron
 (`0 4 * * *`) plus `workflow_dispatch` — der Knopf ist der Weg, eine Änderung
 am Workflow vor dem Merge zu prüfen, weil `schedule` nur auf dem
 Default-Branch greift. Sie sind hier also nicht bloss per `-m "not live"`
 ausgeschlossen; DRIFT-005 ist erfüllt.
+
+**`0 4` heisst nicht 04:00.** Gemessen an allen 30 geplanten Läufen vom 4.10.
+bis 2.11.2026 (`run_started_at`): keiner vor 08:00 UTC, Verzögerung zwischen
+4 h 23 min und 8 h 08 min, Median 6 h 20 min. Ausgefallen ist in dieser Spanne
+kein Tag. «Nächtlich» ist hier also Vormittag bis Mittag.
+
+Die Uhrzeit eines Laufs deshalb aus `run_started_at` lesen, nie aus dem Cron
+rechnen. Genau so entstand eine falsche Zahl im Code: Ein Kommentar in
+`api_infrastructure.py` nannte für den roten Lauf vom 14.9.2026 «04:43 UTC»;
+gestartet war Run 103 um 09:42:11. Im selben Satz stand «von Hand um 09:50 UTC
+abgefragt» — diese Abfrage lief ohne Zeitstempel, belegt ist nur, dass sie vor
+12:49 UTC lag (PR #83). Beides ist korrigiert.
+
+Was GitHub dazu sagt (Events-Referenz, Abschnitt `schedule`):
+
+```
+The schedule event can be delayed during periods of high loads of GitHub
+Actions workflow runs. High load times include the start of every hour. If
+the load is sufficiently high enough, some queued jobs may be dropped.
+To decrease the chance of delay, schedule your workflow to run at a different
+time of the hour.
+```
+
+Der Cron hier sitzt auf Minute 0, also genau auf der genannten Lastspitze. Ob
+eine andere Minute Verzögerungen von vier bis acht Stunden verkürzt, ist nicht
+gemessen — die Referenz spricht von Verzögerung überhaupt, die Grösse hier ist
+die eigene Messung. Und «dropped» heisst: Ein fehlender Tag ist nicht von
+selbst ein kaputter Workflow; in den 30 Tagen fehlte keiner.
+
+**«Schliesst #N» schliesst nichts.** GitHub erkennt als Schlüsselwörter nur
+diese, gross oder klein, auch mit Doppelpunkt — und nur in einem PR auf den
+Default-Branch:
+
+```
+close, closes, closed, fix, fixes, fixed, resolve, resolves, resolved
+
+The pull request must be on the default branch.
+```
+
+Über andere Sprachen sagt die Seite nichts. Gemessen am 14.9.2026: PR #83 trug
+«Schliesst #82.» und wurde in `main` gemergt; Issue #82 blieb offen
+(`closed_by_pull_requests.total_count: 0`) und wurde von Hand geschlossen. Der
+Bezug war für Menschen lesbar, für GitHub nicht. In deutschen PR-Texten deshalb
+zusätzlich `Closes #N` schreiben.
+
+Ausnahme mit Absicht: die `upstream`-Issues des Live-Workflows. Die schliesst
+der nächste Lauf mit Einordnung `clear` — erst dann wurde wirklich verglichen.
+Ein `Closes` im Fix-PR schlösse das Issue beim Merge, bevor die Quelle
+nachgeprüft ist. Issue #99 ging so zu: vom Workflow, am Tag nach dem letzten
+roten Lauf. #82 dagegen wurde nach dem Merge von #83 von Hand geschlossen,
+gestützt auf einen lokalen Live-Lauf statt auf den des Workflows — verglichen
+wurde, aber im Issue steht davon kein Lauf.
 
 **Codex-Review: Messreihe aus diesem Repo.** Der Codex-Abschnitt in Teil 1
 fiel am 23.9.2026 weg (`622e388`: hier läuft kein Codex-Gate). Codex prüft

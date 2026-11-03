@@ -88,9 +88,10 @@ TRANSIENT_ERRORS: tuple[type[Exception], ...] = (
 # wiederholt — dort ist der Parameter falsch, nicht der Zeitpunkt. Ein 5xx
 # traegt beim naechsten Versuch oft.
 #
-# Gemessen am 14.9.2026: Der naechtliche Live-Lauf (04:43 UTC) bekam von
-# api.sharedmobility.ch zweimal HTTP 500 auf /identify und wurde rot; dieselbe
-# URL, von Hand um 09:50 UTC abgefragt, antwortete mit 200 und 50 Fahrzeugen.
+# Gemessen am 14.9.2026: Der geplante Live-Lauf (Run 103, Start 09:42 UTC)
+# bekam von api.sharedmobility.ch zweimal HTTP 500 auf /identify und wurde rot;
+# dieselbe URL, von Hand abgefragt, bevor um 12:49 UTC PR #83 aufging,
+# antwortete mit 200 und 50 Fahrzeugen.
 # Nichts am Vertrag hatte sich bewegt — es gab nur keinen zweiten Versuch.
 #
 # 429 gehoert bewusst NICHT hierher: "du fragst zu viel" ist eine Auskunft,
