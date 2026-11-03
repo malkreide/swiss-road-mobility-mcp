@@ -328,11 +328,63 @@ dass alles auf 3.13 lief. (Im Portfolio nicht selbstverständlich:
 steht nicht da, es gilt also der Standard: Eine rote 3.11 bricht 3.12 und
 3.13 ab, bevor sie etwas sagen.
 
-**Live-Tests:** `.github/workflows/live-tests.yml` läuft nächtlich per Cron
+**Live-Tests:** `.github/workflows/live-tests.yml` läuft täglich per Cron
 (`0 4 * * *`) plus `workflow_dispatch` — der Knopf ist der Weg, eine Änderung
 am Workflow vor dem Merge zu prüfen, weil `schedule` nur auf dem
 Default-Branch greift. Sie sind hier also nicht bloss per `-m "not live"`
 ausgeschlossen; DRIFT-005 ist erfüllt.
+
+**`0 4` heisst nicht 04:00.** Gemessen an allen 30 geplanten Läufen vom 4.10.
+bis 2.11.2026 (`run_started_at`): keiner vor 08:00 UTC, Verzögerung zwischen
+4 h 23 min und 8 h 08 min, Median 6 h 20 min. Ausgefallen ist in dieser Spanne
+kein Tag. «Nächtlich» ist hier also Vormittag bis Mittag.
+
+Die Uhrzeit eines Laufs deshalb aus `run_started_at` lesen, nie aus dem Cron
+rechnen. Genau so entstand eine falsche Zahl im Code: Ein Kommentar in
+`api_infrastructure.py` nannte für den roten Lauf vom 14.9.2026 «04:43 UTC»;
+gestartet war Run 103 um 09:42:11. Im selben Satz stand «von Hand um 09:50 UTC
+abgefragt» — diese Abfrage lief ohne Zeitstempel, belegt ist nur, dass sie vor
+12:49 UTC lag (PR #83). Beides ist korrigiert.
+
+Was GitHub dazu sagt (Events-Referenz, Abschnitt `schedule`):
+
+```
+The schedule event can be delayed during periods of high loads of GitHub
+Actions workflow runs. High load times include the start of every hour. If
+the load is sufficiently high enough, some queued jobs may be dropped.
+To decrease the chance of delay, schedule your workflow to run at a different
+time of the hour.
+```
+
+Der Cron hier sitzt auf Minute 0, also genau auf der genannten Lastspitze. Ob
+eine andere Minute Verzögerungen von vier bis acht Stunden verkürzt, ist nicht
+gemessen — die Referenz spricht von Verzögerung überhaupt, die Grösse hier ist
+die eigene Messung. Und «dropped» heisst: Ein fehlender Tag ist nicht von
+selbst ein kaputter Workflow; in den 30 Tagen fehlte keiner.
+
+**«Schliesst #N» schliesst nichts.** GitHub erkennt als Schlüsselwörter nur
+diese, gross oder klein, auch mit Doppelpunkt — und nur in einem PR auf den
+Default-Branch:
+
+```
+close, closes, closed, fix, fixes, fixed, resolve, resolves, resolved
+
+The pull request must be on the default branch.
+```
+
+Über andere Sprachen sagt die Seite nichts. Gemessen am 14.9.2026: PR #83 trug
+«Schliesst #82.» und wurde in `main` gemergt; Issue #82 blieb offen
+(`closed_by_pull_requests.total_count: 0`) und wurde von Hand geschlossen. Der
+Bezug war für Menschen lesbar, für GitHub nicht. In deutschen PR-Texten deshalb
+zusätzlich `Closes #N` schreiben.
+
+Ausnahme mit Absicht: die `upstream`-Issues des Live-Workflows. Die schliesst
+der nächste Lauf mit Einordnung `clear` — erst dann wurde wirklich verglichen.
+Ein `Closes` im Fix-PR schlösse das Issue beim Merge, bevor die Quelle
+nachgeprüft ist. Issue #99 ging so zu: vom Workflow, am Tag nach dem letzten
+roten Lauf. #82 dagegen wurde nach dem Merge von #83 von Hand geschlossen,
+gestützt auf einen lokalen Live-Lauf statt auf den des Workflows — verglichen
+wurde, aber im Issue steht davon kein Lauf.
 
 **Codex-Review: Messreihe aus diesem Repo.** Der Codex-Abschnitt in Teil 1
 fiel am 23.9.2026 weg (`622e388`: hier läuft kein Codex-Gate). Codex prüft
@@ -345,32 +397,33 @@ bisher jedes Mal, bevor er fertig war:
 | #80 | 9.9.2026 | 8 s nach «ready» | vor dem Merge (lief da noch) | — | 1 min 19 s |
 | #83 | 14.9.2026 | 13:01:48 | 13:01:53, 5 s danach | 13:03:18 | 1 min 25 s |
 | #101 | 3.11.2026 | 05:21:57 | 05:21:59, 2 s danach | 05:22:48 | 49 s |
+| #102 | 3.11.2026 | 05:38:13 | 05:38:19, 6 s danach | 05:39:12 | 53 s |
 
 Die Zeilen #79 und #80 stammen aus der entfernten Fassung (`13b8148`); dort
-stehen sie ohne Uhrzeiten. Bei #83 und #101 sind Merge und Start aus GitHubs
-Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
+stehen sie ohne Uhrzeiten. Bei #83, #101 und #102 sind Merge und Start aus
+GitHubs Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
 #101 drei Sekunden hinter dem Merge, und mit ihr gerechnet hätte der Review
 «vor dem Merge» begonnen. Für «ready» gibt es dort nur die Zustellzeit
-(13:01:45 bzw. 05:21:55); der Umschaltzeitpunkt liegt höchstens davor. Der
-Abstand bis zum Merge war also *mindestens* 3 bzw. 2 Sekunden, nach oben ist er
-aus diesen Daten nicht begrenzt.
+(13:01:45, 05:21:55, 05:38:12); der Umschaltzeitpunkt liegt höchstens davor.
+Der Abstand bis zum Merge war also *mindestens* 3, 2 und 1 Sekunde, nach oben
+ist er aus diesen Daten nicht begrenzt.
 
-- **Vier Reviews, viermal befundlos, viermal auf genau dem gemergten Commit.**
+- **Fünf Reviews, fünfmal befundlos, fünfmal auf genau dem gemergten Commit.**
   Das ist die Reihenfolge, die zufällig passte, kein Ablauf, der es
   sicherstellt: Ein Push nach dem «ready» hätte einen Review hinterlassen, der
   einen älteren Head prüft als den gemergten, und gemergt war jedes Mal, bevor
   einer fertig sein konnte.
-- **Dauer 49 s bis 1 min 25 s**, vier Messungen. Gemergt wurde jedes Mal
-  schneller: #79 und #80 nach 3 und 8 Sekunden; bei #79, #83 und #101 begann
-  der Review erst nach dem Merge.
-- **Die 👍-Reaktion kam bei keinem der vier** (`reactions.total_count: 0`),
+- **Dauer 49 s bis 1 min 25 s**, fünf Messungen. Gemergt wurde jedes Mal
+  schneller: #79 und #80 nach 3 und 8 Sekunden; bei #79, #83, #101 und #102
+  begann der Review erst nach dem Merge.
+- **Die 👍-Reaktion kam bei keinem der fünf** (`reactions.total_count: 0`),
   obwohl der Infokasten sie bei jedem ankündigt.
-- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 trägt der
-  Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
+- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 und #102
+  trägt der Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
   zweiten, `<!-- codex-review-state:v1 {…} -->`, mit `status`, `commit_sha`,
   `has_any_findings` und `has_unresolved_findings` (dazu ein leerer Block
   `security_review`). Bei #83 am 14.9. fehlte er noch; seit wann es ihn gibt,
-  ist dazwischen nicht gemessen. Bei #101 stimmte er mit dem Rest überein:
+  ist dazwischen nicht gemessen. Bei beiden stimmte er mit dem Rest überein:
   `completed`, `has_any_findings: false`, `get_reviews == []`. Ungemessen
   bleibt, wie er bei einem Befund aussieht. Vor dem Merge reicht damit eine
   Zeile statt Prosa: `status` ist `completed` und `commit_sha` ist der Head.
