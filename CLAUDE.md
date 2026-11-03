@@ -333,3 +333,44 @@ steht nicht da, es gilt also der Standard: Eine rote 3.11 bricht 3.12 und
 am Workflow vor dem Merge zu prüfen, weil `schedule` nur auf dem
 Default-Branch greift. Sie sind hier also nicht bloss per `-m "not live"`
 ausgeschlossen; DRIFT-005 ist erfüllt.
+
+**Codex-Review: Messreihe aus diesem Repo.** Der Codex-Abschnitt in Teil 1
+fiel am 23.9.2026 weg (`622e388`: hier läuft kein Codex-Gate). Codex prüft
+trotzdem weiter, sobald ein Draft auf «ready» gestellt wird. Gemergt wurde
+bisher jedes Mal, bevor er fertig war:
+
+| PR | Datum | Merge | Review gestartet | Review fertig | Dauer |
+|---|---|---|---|---|---|
+| #79 | 9.9.2026 | 3 s nach «ready» | 4 s nach dem Merge | — | 1 min 14 s |
+| #80 | 9.9.2026 | 8 s nach «ready» | vor dem Merge (lief da noch) | — | 1 min 19 s |
+| #83 | 14.9.2026 | 13:01:48 | 13:01:53, 5 s danach | 13:03:18 | 1 min 25 s |
+| #101 | 3.11.2026 | 05:21:57 | 05:21:59, 2 s danach | 05:22:48 | 49 s |
+
+Die Zeilen #79 und #80 stammen aus der entfernten Fassung (`13b8148`); dort
+stehen sie ohne Uhrzeiten. Bei #83 und #101 sind Merge und Start aus GitHubs
+Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
+#101 drei Sekunden hinter dem Merge, und mit ihr gerechnet hätte der Review
+«vor dem Merge» begonnen. Für «ready» gibt es dort nur die Zustellzeit
+(13:01:45 bzw. 05:21:55); der Umschaltzeitpunkt liegt höchstens davor. Der
+Abstand bis zum Merge war also *mindestens* 3 bzw. 2 Sekunden, nach oben ist er
+aus diesen Daten nicht begrenzt.
+
+- **Vier Reviews, viermal befundlos, viermal auf genau dem gemergten Commit.**
+  Das ist die Reihenfolge, die zufällig passte, kein Ablauf, der es
+  sicherstellt: Ein Push nach dem «ready» hätte einen Review hinterlassen, der
+  einen älteren Head prüft als den gemergten, und gemergt war jedes Mal, bevor
+  einer fertig sein konnte.
+- **Dauer 49 s bis 1 min 25 s**, vier Messungen. Gemergt wurde jedes Mal
+  schneller: #79 und #80 nach 3 und 8 Sekunden; bei #79, #83 und #101 begann
+  der Review erst nach dem Merge.
+- **Die 👍-Reaktion kam bei keinem der vier** (`reactions.total_count: 0`),
+  obwohl der Infokasten sie bei jedem ankündigt.
+- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 trägt der
+  Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
+  zweiten, `<!-- codex-review-state:v1 {…} -->`, mit `status`, `commit_sha`,
+  `has_any_findings` und `has_unresolved_findings` (dazu ein leerer Block
+  `security_review`). Bei #83 am 14.9. fehlte er noch; seit wann es ihn gibt,
+  ist dazwischen nicht gemessen. Bei #101 stimmte er mit dem Rest überein:
+  `completed`, `has_any_findings: false`, `get_reviews == []`. Ungemessen
+  bleibt, wie er bei einem Befund aussieht. Vor dem Merge reicht damit eine
+  Zeile statt Prosa: `status` ist `completed` und `commit_sha` ist der Head.
