@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> **Upgrade-Hinweis.** Wer die Ausgabe der drei Sharing-Werkzeuge maschinell
+> liest: In zwei Fällen kommt jetzt ein Fehler (`isError`, Code
+> `UPSTREAM_ERROR`) statt `count: 0` — wenn sharedmobility.ch gestört ist und
+> wenn sie in einem unbekannten Format antwortet. Ein leeres Ergebnis trägt neu
+> ein `hint`, das sagt, was geprüft wurde. Bei `road_search_sharing` ist `hint`
+> ein neues Feld.
+
+### Behoben
+
+- **Eine gestörte Quelle kam als «keine Treffer» heraus** (`road_find_sharing`,
+  `road_search_sharing`, `road_sharing_providers`, dazu der Sharing-Teil von
+  `road_mobility_snapshot` und `road_multimodal_plan`). Am 31.10. und 1.11.2026
+  lieferte sharedmobility.ch auf jede Abfrage HTTP 200 mit leerer Liste, auch
+  auf ihr Anbieterverzeichnis. Der Server antwortete am Zürich HB mit
+  `count: 0`, versehen mit «Ergebnisse zeigen Echtzeit-Verfügbarkeit», und auf
+  die Anbieterfrage mit `count: 0` samt Quelle BFE. Am Endpunkt selbst ist das nicht von einem echten leeren
+  Ergebnis zu unterscheiden — ein Unsinnswort oder der Piz Bernina liefern
+  byte-gleich `200 []`. Es entscheidet das Anbieterverzeichnis, das nie
+  berechtigt leer ist: Ist eine Antwort leer, fragt der Server es nach
+  (höchstens eine Abfrage je Minute, im Normalfall keine). Ist auch das
+  Verzeichnis leer, meldet er eine Störung; sonst bleibt das leere Ergebnis
+  stehen, mit dem Hinweis, was geprüft wurde. Ein leeres Verzeichnis wird
+  nicht mehr gecacht — sonst hätte der Server nach dem Ende einer Störung noch
+  eine Stunde lang eine gemeldet.
+- **Ein unbekanntes Antwortformat wurde zu «0 Treffer».** Eine Antwort von
+  sharedmobility.ch, die keine Liste ist, wurde still zu `count: 0` — von
+  einer Quelle, die ihr Format geändert hat, nicht zu unterscheiden von einem
+  leeren Ort. Jetzt ist es ein Fehler, der das Format nennt.
+- **Ein Live-Test prüfte bei leerer Quelle nichts.** `test_find_nearby_with_filter`
+  prüfte nur «wenn Ergebnisse, dann E-Bikes» und blieb während der Störung als
+  einziger Sharing-Test grün. Er verlangt jetzt Treffer. Ein neuer Live-Test
+  fährt den Prüfweg gegen die echte Quelle.
+
 ## [0.6.1] - 2026-10-14
 
 Fehlerbehebungen für die Sharing-Suche, den nächsten ÖV-Haltepunkt und die
