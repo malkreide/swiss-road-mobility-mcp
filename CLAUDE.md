@@ -398,32 +398,33 @@ bisher jedes Mal, bevor er fertig war:
 | #83 | 14.9.2026 | 13:01:48 | 13:01:53, 5 s danach | 13:03:18 | 1 min 25 s |
 | #101 | 3.11.2026 | 05:21:57 | 05:21:59, 2 s danach | 05:22:48 | 49 s |
 | #102 | 3.11.2026 | 05:38:13 | 05:38:19, 6 s danach | 05:39:12 | 53 s |
+| #103 | 3.11.2026 | 12:20:06 | 12:20:13, 7 s danach | 12:21:05 | 53 s |
 
 Die Zeilen #79 und #80 stammen aus der entfernten Fassung (`13b8148`); dort
-stehen sie ohne Uhrzeiten. Bei #83, #101 und #102 sind Merge und Start aus
+stehen sie ohne Uhrzeiten. Bei #83 und #101 bis #103 sind Merge und Start aus
 GitHubs Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
 #101 drei Sekunden hinter dem Merge, und mit ihr gerechnet hätte der Review
 «vor dem Merge» begonnen. Für «ready» gibt es dort nur die Zustellzeit
-(13:01:45, 05:21:55, 05:38:12); der Umschaltzeitpunkt liegt höchstens davor.
-Der Abstand bis zum Merge war also *mindestens* 3, 2 und 1 Sekunde, nach oben
-ist er aus diesen Daten nicht begrenzt.
+(13:01:45, 05:21:55, 05:38:12, 12:20:03); der Umschaltzeitpunkt liegt
+höchstens davor. Der Abstand bis zum Merge war also *mindestens* 3, 2, 1 und
+3 Sekunden, nach oben ist er aus diesen Daten nicht begrenzt.
 
-- **Fünf Reviews, fünfmal befundlos, fünfmal auf genau dem gemergten Commit.**
+- **Sechs Reviews, sechsmal befundlos, sechsmal auf genau dem gemergten Commit.**
   Das ist die Reihenfolge, die zufällig passte, kein Ablauf, der es
   sicherstellt: Ein Push nach dem «ready» hätte einen Review hinterlassen, der
   einen älteren Head prüft als den gemergten, und gemergt war jedes Mal, bevor
   einer fertig sein konnte.
-- **Dauer 49 s bis 1 min 25 s**, fünf Messungen. Gemergt wurde jedes Mal
-  schneller: #79 und #80 nach 3 und 8 Sekunden; bei #79, #83, #101 und #102
+- **Dauer 49 s bis 1 min 25 s**, sechs Messungen. Gemergt wurde jedes Mal
+  schneller: #79 und #80 nach 3 und 8 Sekunden; bei #79, #83 und #101 bis #103
   begann der Review erst nach dem Merge.
-- **Die 👍-Reaktion kam bei keinem der fünf** (`reactions.total_count: 0`),
+- **Die 👍-Reaktion kam bei keinem der sechs** (`reactions.total_count: 0`),
   obwohl der Infokasten sie bei jedem ankündigt.
-- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 und #102
+- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 bis #103
   trägt der Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
   zweiten, `<!-- codex-review-state:v1 {…} -->`, mit `status`, `commit_sha`,
   `has_any_findings` und `has_unresolved_findings` (dazu ein leerer Block
   `security_review`). Bei #83 am 14.9. fehlte er noch; seit wann es ihn gibt,
-  ist dazwischen nicht gemessen. Bei beiden stimmte er mit dem Rest überein:
+  ist dazwischen nicht gemessen. Bei allen dreien stimmte er mit dem Rest überein:
   `completed`, `has_any_findings: false`, `get_reviews == []`. Ungemessen
   bleibt, wie er bei einem Befund aussieht. Vor dem Merge reicht damit eine
   Zeile statt Prosa: `status` ist `completed` und `commit_sha` ist der Head.
