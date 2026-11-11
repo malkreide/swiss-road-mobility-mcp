@@ -403,47 +403,48 @@ bisher jedes Mal, bevor er fertig war:
 | #105 | 7.11.2026 | 20:33:00 | 20:33:03, 3 s danach | 20:33:56 | 53 s |
 | #106 | 7.11.2026 | 20:51:44 | 20:51:47, 3 s danach | 20:52:42 | 55 s |
 | #107 | 7.11.2026 | 21:10:44 | 21:10:46, 3 s danach | 21:11:38 | 52 s |
+| #108 | 8.11.2026 | 09:18:47 | 09:18:52, 5 s danach | 09:19:48 | 57 s |
 
 Die Zeilen #79 und #80 stammen aus der entfernten Fassung (`13b8148`); dort
-stehen sie ohne Uhrzeiten. Bei #83, #101 bis #103 und #105 bis #107 sind Merge und Start aus
+stehen sie ohne Uhrzeiten. Bei #83, #101 bis #103 und #105 bis #108 sind Merge und Start aus
 GitHubs Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
 #101 drei Sekunden hinter dem Merge, und mit ihr gerechnet hätte der Review
 «vor dem Merge» begonnen. Für «ready» gibt es dort nur die Zustellzeit
-(13:01:45, 05:21:55, 05:38:12, 12:20:03, 20:32:59, 20:51:43, 21:10:43); der
-Umschaltzeitpunkt liegt höchstens davor. Der Abstand bis zum Merge war also
-*mindestens* 3, 2, 1, 3, 1, 1 und 1 Sekunde, nach oben ist er aus diesen Daten
-nicht begrenzt. Bei #104
+(13:01:45, 05:21:55, 05:38:12, 12:20:03, 20:32:59, 20:51:43, 21:10:43,
+09:18:46); der Umschaltzeitpunkt liegt höchstens davor. Der Abstand bis zum
+Merge war also *mindestens* 3, 2, 1, 3, 1, 1, 1 und 1 Sekunde, nach oben ist er
+aus diesen Daten nicht begrenzt. Bei #104
 («ready» zugestellt 11:56:03, also mindestens 2 Sekunden) fehlt die Startzeit:
 Codex überschreibt seinen Statuskasten, und gelesen wurde er erst, als dort
 `Completed` stand. Belegt ist nur, wann der Kasten angelegt wurde (11:56:12);
 der Start liegt höchstens davor, die Dauer ist deshalb nur nach unten begrenzt.
 Wer den Start braucht, liest den Kasten, solange er `Running` zeigt — bei #105
-bis #107 so gemacht, dort ist der Start deshalb wieder belegt.
+bis #108 so gemacht, dort ist der Start deshalb wieder belegt.
 
-- **Zehn Reviews, zehnmal befundlos, zehnmal auf genau dem gemergten Commit.**
+- **Elf Reviews, elfmal befundlos, elfmal auf genau dem gemergten Commit.**
   Das ist die Reihenfolge, die zufällig passte, kein Ablauf, der es
   sicherstellt: Ein Push nach dem «ready» hätte einen Review hinterlassen, der
   einen älteren Head prüft als den gemergten, und gemergt war jedes Mal, bevor
   einer fertig sein konnte.
-- **Dauer 49 s bis 1 min 25 s**, neun Messungen, dazu #104 mit mindestens
+- **Dauer 49 s bis 1 min 25 s**, zehn Messungen, dazu #104 mit mindestens
   54 s. Gemergt wurde jedes Mal schneller: #79 und #80 nach 3 und 8 Sekunden;
-  bei #79, #83, #101 bis #103 und #105 bis #107 begann der Review erst nach dem Merge. Bei #104
+  bei #79, #83, #101 bis #103 und #105 bis #108 begann der Review erst nach dem Merge. Bei #104
   ist das nicht belegt — der Start lag spätestens 7 Sekunden nach dem Merge,
   vielleicht auch davor.
-- **Die 👍-Reaktion kam bei keinem der zehn** (`reactions.total_count: 0`),
+- **Die 👍-Reaktion kam bei keinem der elf** (`reactions.total_count: 0`),
   obwohl der Infokasten sie bei jedem ankündigt.
-- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 bis #107
+- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 bis #108
   trägt der Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
   zweiten, `<!-- codex-review-state:v1 {…} -->`, mit `status`, `commit_sha`,
   `has_any_findings` und `has_unresolved_findings` (dazu ein leerer Block
   `security_review`). Bei #83 am 14.9. fehlte er noch; seit wann es ihn gibt,
-  ist dazwischen nicht gemessen. Bei allen sieben stimmte er mit dem Rest überein:
+  ist dazwischen nicht gemessen. Bei allen acht stimmte er mit dem Rest überein:
   `completed`, `has_any_findings: false`, `get_reviews == []`. Ungemessen
   bleibt, wie er bei einem Befund aussieht. Vor dem Merge reicht damit eine
   Zeile statt Prosa: `status` ist `completed` und `commit_sha` ist der Head.
 - **Die Prosa um den Marker bleibt nicht stehen.** Bei #104 am 4.11. trug der
-  Kasten noch die Überschrift `## Codex Review Summary`; bei #105 bis #107 am
-  7.11. steckt er in einem aufklappbaren `<details>`-Block mit der Zeile «Codex Review
+  Kasten noch die Überschrift `## Codex Review Summary`; bei #105 bis #108 am
+  7. und 8.11. steckt er in einem aufklappbaren `<details>`-Block mit der Zeile «Codex Review
   Summary: 🔄 Running» bzw. «✅ Completed». Der Marker darüber war in beiden
   Fällen gleich. Wer den Zustand auslesen will, liest also den Marker, nicht
   die Überschrift: Die hat sich in drei Tagen geändert, der Marker nicht.
