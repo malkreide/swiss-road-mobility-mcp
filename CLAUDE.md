@@ -425,21 +425,22 @@ bisher jedes Mal, bevor er fertig war:
 | #128 | 24.11.2026 | 03:51:06 | 03:51:07, 2 s danach | 03:51:44 | 36 s |
 | #129 | 24.11.2026 | 04:15:48 | 04:15:50, 3 s danach | 04:16:43 | 53 s |
 | #130 | 24.11.2026 | 05:29:00 | 05:29:02, 3 s danach | 05:29:52 | 50 s |
+| #131 | 25.11.2026 | 06:47:26 | 06:47:29, 4 s danach | 06:48:24 | 55 s |
 
 Die Zeilen #79 und #80 stammen aus der entfernten Fassung (`13b8148`); dort
-stehen sie ohne Uhrzeiten. Bei #83, #101 bis #103, #105 bis #108, #110 bis #117 und #119 bis #130 sind Merge und Start aus
+stehen sie ohne Uhrzeiten. Bei #83, #101 bis #103, #105 bis #108, #110 bis #117 und #119 bis #131 sind Merge und Start aus
 GitHubs Daten gelesen, nicht aus der Zustellzeit der Benachrichtigung — die lag bei
 #101 drei Sekunden hinter dem Merge, und mit ihr gerechnet hätte der Review
 «vor dem Merge» begonnen. Für «ready» gibt es dort nur die Zustellzeit
 (13:01:45, 05:21:55, 05:38:12, 12:20:03, 20:32:59, 20:51:43, 21:10:43,
 09:18:46, dazu 08:54:10, 09:14:47, 09:22:52, 09:55:15, 11:13:34, 16:58:47,
 09:26:37, 09:43:55, 18:13:11, 18:22:10, 18:33:22, 18:38:51, 18:57:29, 10:58:15,
-03:44:22, 03:51:04, 04:15:47 und 05:28:59 bei #112 bis #117 und #119 bis #130); der Umschaltzeitpunkt liegt höchstens
+03:44:22, 03:51:04, 04:15:47, 05:28:59 und 06:47:25 bei #112 bis #117 und #119 bis #131); der Umschaltzeitpunkt liegt höchstens
 davor. Der Abstand bis zum Merge war also *mindestens* 3, 2, 1, 3, 1, 1, 1, 1,
-1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 1 und 1 Sekunden, nach oben ist er
+1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1 und 1 Sekunden, nach oben ist er
 aus diesen Daten nicht begrenzt. Bei #110 kam «ready» erst um 13:02:01 an,
 2 Sekunden *nach* dem Merge (13:01:59), bei #111 um 19:22:25, 1 Sekunde nach
-dem Merge (19:22:24); bei #112 bis #117, #119 und #120 ab dem Tag darauf wieder je 1 Sekunde davor, bei #121 2 Sekunden, bei #122 wieder 1, bei #123 bis #128 wieder 2, bei #129 und #130 wieder 1. Die
+dem Merge (19:22:24); bei #112 bis #117, #119 und #120 ab dem Tag darauf wieder je 1 Sekunde davor, bei #121 2 Sekunden, bei #122 wieder 1, bei #123 bis #128 wieder 2, bei #129 bis #131 wieder 1. Die
 Reihenfolge schwankt also, ein fester Verzug ist es nicht. «Höchstens davor» bleibt wahr, gibt dort aber keine
 Untergrenze mehr her; belegt ist nur, dass «ready» vor dem
 Merge lag, weil sich ein Draft nicht mergen lässt. Die Zustellung hinkt also
@@ -451,30 +452,31 @@ mindestens 1 Sekunde) fehlt die Startzeit: Codex überschreibt seinen
 Statuskasten, und gelesen wurde er erst, als dort `Completed` stand. Belegt ist
 nur, wann der Kasten angelegt wurde (11:56:12 bzw. 04:56:37); der Start liegt
 höchstens davor, die Dauer ist deshalb nur nach unten begrenzt. Wie weit
-davor, zeigen #110 bis #117 und #119 bis #130, bei denen beides belegt ist:
+davor, zeigen #110 bis #117 und #119 bis #131, bei denen beides belegt ist:
 Start 13:02:04.327, 19:22:30.320, 08:54:13.383, 09:14:49.978, 09:22:55.487,
 09:55:20.864, 11:13:37.264, 16:58:49.812, 09:26:40.805, 09:44:01.232,
 18:13:17.760, 18:22:21.641, 18:33:25.542, 18:38:56.058, 18:57:34.690, 10:58:22.836,
-03:44:30.150, 03:51:07.947, 04:15:50.550 und 05:29:02.680,
+03:44:30.150, 03:51:07.947, 04:15:50.550, 05:29:02.680 und 06:47:29.651,
 Kasten angelegt 13:02:07, 19:22:35, 08:54:15, 09:14:52, 09:22:57, 09:55:23,
 11:13:38, 16:58:51, 09:26:42, 09:44:04, 18:13:20, 18:22:25, 18:33:27,
-18:38:57, 18:57:38, 10:58:26, 03:44:34, 03:51:09, 04:15:52 und 05:29:04, also rund
-3, 5, 2, 2, 2, 2, 1, 1, 1, 3, 2, 3, 1, 1, 3, 3, 4, 1, 1 und 1 Sekunden später. Die echten Dauern von #104 und #109 dürften um einen
+18:38:57, 18:57:38, 10:58:26, 03:44:34, 03:51:09, 04:15:52, 05:29:04 und 06:47:31, also
+rund 3, 5, 2, 2, 2, 2, 1, 1, 1, 3, 2, 3, 1, 1, 3, 3, 4, 1, 1, 1 und 1 Sekunden
+später. Die echten Dauern von #104 und #109 dürften um einen
 solchen Betrag über der Untergrenze liegen; gemessen ist das nicht. Diese
 Untergrenze rechnet vom *Ende* der angegebenen Sekunde: `created_at` ist auf
 ganze Sekunden abgeschnitten, das Fertig-Datum trägt Bruchteile
 (11:57:05.988, 04:57:30.408). Daraus folgen 53 und 52 s — #104 stand zuerst mit
 54 s da, gerechnet vom Anfang der Sekunde und damit eine knappe Sekunde zu
 hoch. Wer den Start braucht, liest den Kasten, solange er `Running` zeigt — bei
-#105 bis #108, #110 bis #117 und #119 bis #130 so gemacht, dort ist
+#105 bis #108, #110 bis #117 und #119 bis #131 so gemacht, dort ist
 der Start deshalb wieder belegt.
 
-- **Zweiunddreissig Reviews, zweiunddreissigmal befundlos, zweiunddreissigmal auf genau dem gemergten Commit.**
+- **Dreiunddreissig Reviews, dreiunddreissigmal befundlos, dreiunddreissigmal auf genau dem gemergten Commit.**
   Das ist die Reihenfolge, die zufällig passte, kein Ablauf, der es
   sicherstellt: Ein Push nach dem «ready» hätte einen Review hinterlassen, der
   einen älteren Head prüft als den gemergten, und gemergt war jedes Mal, bevor
   einer fertig sein konnte.
-- **Dauer 35 s bis 1 min 25 s**, dreissig Messungen, dazu #104 und #109
+- **Dauer 35 s bis 1 min 25 s**, einunddreissig Messungen, dazu #104 und #109
   mit mindestens 53 und 52 s. Vier fallen heraus: #114 mit 35 s, #117 mit 39 s,
   #124 mit 35 s und #128 mit 36 s, sonst nie unter 49 s, alle bei einem Diff derselben Art
   wie seit #102 (nur die CLAUDE.md, rund 20 Zeilen hinzu und weg). Dazwischen
@@ -490,26 +492,27 @@ der Start deshalb wieder belegt.
   Wert nicht her. #127 lag danach mit 58 s wieder in der Gruppe von 53 bis
   61 s, #128 mit 36 s in der von 35 bis 39 s, #129 mit 53 s wieder in der
   langen. #130 liegt mit 50 s zwischen beiden Gruppen, als erster Wert seit
-  #114; davor lagen dort #101 und #112 mit 49 s und #107 mit 52 s. Gemergt wurde jedes Mal schneller: #79 und #80 nach
+  #114; davor lagen dort #101 und #112 mit 49 s und #107 mit 52 s. #131 lag mit 55 s wieder in der
+  langen. Gemergt wurde jedes Mal schneller: #79 und #80 nach
   3 und 8 Sekunden; bei #79, #83, #101 bis #103, #105 bis #108, #110 bis
-  #117 und #119 bis #130 begann der Review erst nach dem Merge, sonst 2 bis
+  #117 und #119 bis #131 begann der Review erst nach dem Merge, sonst 2 bis
   7 Sekunden danach, bei #122 erst nach 11. Bei #104 und #109 ist das nicht belegt — der
   Start lag spätestens 7 bzw. 5 Sekunden nach dem Merge, vielleicht auch
   davor.
-- **Die 👍-Reaktion kam bei keinem der zweiunddreissig** (`reactions.total_count: 0`),
+- **Die 👍-Reaktion kam bei keinem der dreiunddreissig** (`reactions.total_count: 0`),
   obwohl der Infokasten sie bei jedem ankündigt.
-- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 bis #117 und #119 bis #130
+- **Neu: ein maschinenlesbarer Zustand im Statuskasten.** Bei #101 bis #117 und #119 bis #131
   trägt der Kommentar unter dem Marker `<!-- codex-pull-request-review-summary -->` einen
   zweiten, `<!-- codex-review-state:v1 {…} -->`, mit `status`, `commit_sha`,
   `has_any_findings` und `has_unresolved_findings` (dazu ein leerer Block
   `security_review`). Bei #83 am 14.9. fehlte er noch; seit wann es ihn gibt,
-  ist dazwischen nicht gemessen. Bei allen neunundzwanzig stimmte er mit dem Rest überein:
+  ist dazwischen nicht gemessen. Bei allen dreissig stimmte er mit dem Rest überein:
   `completed`, `has_any_findings: false`, `get_reviews == []`. Ungemessen
   bleibt, wie er bei einem Befund aussieht. Vor dem Merge reicht damit eine
   Zeile statt Prosa: `status` ist `completed` und `commit_sha` ist der Head.
 - **Die Prosa um den Marker bleibt nicht stehen.** Bei #104 am 4.11. trug der
   Kasten noch die Überschrift `## Codex Review Summary`; bei #105 bis #117 und #119
-  bis #130 am 7., 8., 11., 13., 14., 16., 22., 23. und 24.11. steckt er in einem aufklappbaren `<details>`-Block mit der Zeile «Codex Review
+  bis #131 am 7., 8., 11., 13., 14., 16., 22., 23., 24. und 25.11. steckt er in einem aufklappbaren `<details>`-Block mit der Zeile «Codex Review
   Summary: 🔄 Running» bzw. «✅ Completed». Der Marker darüber war in beiden
   Fällen gleich. Wer den Zustand auslesen will, liest also den Marker, nicht
   die Überschrift: Die hat sich in drei Tagen geändert, der Marker nicht.
